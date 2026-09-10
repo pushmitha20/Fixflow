@@ -1,15 +1,18 @@
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, Field
 
 
 class MaintenanceRequestCreate(BaseModel):
-    title: str
-    description: str
-    location: str
-    priority: str
+    title: str = Field(min_length=3, max_length=100)
+    description: str = Field(min_length=5, max_length=500)
+    location: str = Field(min_length=2, max_length=100)
+    priority: Literal["LOW", "MEDIUM", "HIGH"]
+
 
 class MaintenanceRequestUpdate(BaseModel):
-    title: str
-    description: str
-    location: str
-    priority: str
-    status: str 
+    title: str = Field(min_length=3, max_length=100)
+    description: str = Field(min_length=5, max_length=500)
+    location: str = Field(min_length=2, max_length=100)
+    priority: Literal["LOW", "MEDIUM", "HIGH"]
+    status: Literal["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]
