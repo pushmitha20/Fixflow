@@ -1,11 +1,13 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from schemas import MaintenanceRequestCreate, MaintenanceRequestUpdate
 from database import SessionLocal, engine, Base
 from models import MaintenanceRequest
 
+
 app = FastAPI()
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -16,6 +18,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 @app.get("/health")
 def health_check():
@@ -43,7 +46,9 @@ def create_request(
 
 
 @app.get("/requests")
-def get_requests(db: Session = Depends(get_db)):
+def get_requests(
+    db: Session = Depends(get_db)
+):
     requests = db.query(MaintenanceRequest).all()
 
     return requests
@@ -59,11 +64,13 @@ def get_request(
     ).first()
 
     if request is None:
-        return {"error": "Request not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Request not found"
+        )
 
     return request
 
-    
 
 @app.put("/requests/{request_id}")
 def update_request(
@@ -76,7 +83,10 @@ def update_request(
     ).first()
 
     if request is None:
-        return {"error": "Request not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Request not found"
+        )
 
     request.title = updated_request.title
     request.description = updated_request.description
@@ -89,6 +99,7 @@ def update_request(
 
     return request
 
+
 @app.delete("/requests/{request_id}")
 def delete_request(
     request_id: int,
@@ -99,7 +110,10 @@ def delete_request(
     ).first()
 
     if request is None:
-        return {"error": "Request not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Request not found"
+        )
 
     db.delete(request)
     db.commit()
