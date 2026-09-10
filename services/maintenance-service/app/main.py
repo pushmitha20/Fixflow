@@ -1,7 +1,11 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.schemas import MaintenanceRequestCreate, MaintenanceRequestUpdate
+from app.schemas import (
+    MaintenanceRequestCreate,
+    MaintenanceRequestResponse,
+    MaintenanceRequestUpdate,
+)
 from app.database import SessionLocal, engine, Base
 from app.services import maintenance_service
 
@@ -24,7 +28,7 @@ def health_check():
     return {"status": "healthy"}
 
 
-@app.post("/requests")
+@app.post("/requests", response_model=MaintenanceRequestResponse)
 def create_request(
     request: MaintenanceRequestCreate,
     db: Session = Depends(get_db)
@@ -32,14 +36,14 @@ def create_request(
     return maintenance_service.create_request(db, request)
 
 
-@app.get("/requests")
+@app.get("/requests", response_model=list[MaintenanceRequestResponse])
 def get_requests(
     db: Session = Depends(get_db)
 ):
     return maintenance_service.get_requests(db)
 
 
-@app.get("/requests/{request_id}")
+@app.get("/requests/{request_id}", response_model=MaintenanceRequestResponse)
 def get_request(
     request_id: int,
     db: Session = Depends(get_db)
@@ -55,7 +59,7 @@ def get_request(
     return request
 
 
-@app.put("/requests/{request_id}")
+@app.put("/requests/{request_id}", response_model=MaintenanceRequestResponse)
 def update_request(
     request_id: int,
     updated_request: MaintenanceRequestUpdate,
