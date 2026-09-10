@@ -66,16 +66,28 @@ def get_request(
     
 
 @app.put("/requests/{request_id}")
-def update_request(request_id: int, updated_request: MaintenanceRequestUpdate):
-    for request in maintenance_requests:
-        if request["id"] == request_id:
-            request["title"] = updated_request.title
-            request["description"] = updated_request.description
-            request["location"] = updated_request.location
-            request["priority"] = updated_request.priority
-            request["status"] = updated_request.status
+def update_request(
+    request_id: int,
+    updated_request: MaintenanceRequestUpdate,
+    db: Session = Depends(get_db)
+):
+    request = db.query(MaintenanceRequest).filter(
+        MaintenanceRequest.id == request_id
+    ).first()
 
-            return request
+    if request is None:
+        return {"error": "Request not found"}
+
+    request.title = updated_request.title
+    request.description = updated_request.description
+    request.location = updated_request.location
+    request.priority = updated_request.priority
+    request.status = updated_request.status
+
+    db.commit()
+    db.refresh(request)
+
+    return request
 
 @app.delete("/requests/{request_id}")
 def delete_request(request_id: int):
