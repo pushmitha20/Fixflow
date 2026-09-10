@@ -1,0 +1,73 @@
+from sqlalchemy.orm import Session
+
+from models import MaintenanceRequest
+from schemas import MaintenanceRequestCreate, MaintenanceRequestUpdate
+
+
+def create_request(
+    db: Session,
+    request: MaintenanceRequestCreate
+):
+    new_request = MaintenanceRequest(
+        title=request.title,
+        description=request.description,
+        location=request.location,
+        priority=request.priority,
+        status="OPEN"
+    )
+
+    db.add(new_request)
+    db.commit()
+    db.refresh(new_request)
+
+    return new_request
+
+
+def get_requests(db: Session):
+    return db.query(MaintenanceRequest).all()
+
+
+def get_request(
+    db: Session,
+    request_id: int
+):
+    return db.query(MaintenanceRequest).filter(
+        MaintenanceRequest.id == request_id
+    ).first()
+
+
+def update_request(
+    db: Session,
+    request_id: int,
+    updated_request: MaintenanceRequestUpdate
+):
+    request = get_request(db, request_id)
+
+    if request is None:
+        return None
+
+    request.title = updated_request.title
+    request.description = updated_request.description
+    request.location = updated_request.location
+    request.priority = updated_request.priority
+    request.status = updated_request.status
+
+    db.commit()
+    db.refresh(request)
+
+    return request
+
+
+def delete_request(
+    db: Session,
+    request_id: int
+):
+    request = get_request(db, request_id)
+
+    if request is None:
+        return False
+
+    db.delete(request)
+    db.commit()
+
+    return True

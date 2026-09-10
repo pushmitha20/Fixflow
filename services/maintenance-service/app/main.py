@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from schemas import MaintenanceRequestCreate, MaintenanceRequestUpdate
 from database import SessionLocal, engine, Base
-from models import MaintenanceRequest
+from services import maintenance_service
 
 
 app = FastAPI()
@@ -30,28 +30,14 @@ def create_request(
     request: MaintenanceRequestCreate,
     db: Session = Depends(get_db)
 ):
-    new_request = MaintenanceRequest(
-        title=request.title,
-        description=request.description,
-        location=request.location,
-        priority=request.priority,
-        status="OPEN"
-    )
-
-    db.add(new_request)
-    db.commit()
-    db.refresh(new_request)
-
-    return new_request
+    return maintenance_service.create_request(db, request)
 
 
 @app.get("/requests")
 def get_requests(
     db: Session = Depends(get_db)
 ):
-    requests = db.query(MaintenanceRequest).all()
-
-    return requests
+    return maintenance_service.get_requests(db)
 
 
 @app.get("/requests/{request_id}")
@@ -59,9 +45,7 @@ def get_request(
     request_id: int,
     db: Session = Depends(get_db)
 ):
-    request = db.query(MaintenanceRequest).filter(
-        MaintenanceRequest.id == request_id
-    ).first()
+    request = maintenance_service.get_request(db, request_id)
 
     if request is None:
         raise HTTPException(
@@ -78,24 +62,17 @@ def update_request(
     updated_request: MaintenanceRequestUpdate,
     db: Session = Depends(get_db)
 ):
-    request = db.query(MaintenanceRequest).filter(
-        MaintenanceRequest.id == request_id
-    ).first()
+    request = maintenance_service.update_request(
+        db,
+        request_id,
+        updated_request
+    )
 
     if request is None:
         raise HTTPException(
             status_code=404,
             detail="Request not found"
         )
-
-    request.title = updated_request.title
-    request.description = updated_request.description
-    request.location = updated_request.location
-    request.priority = updated_request.priority
-    request.status = updated_request.status
-
-    db.commit()
-    db.refresh(request)
 
     return request
 
@@ -105,17 +82,15 @@ def delete_request(
     request_id: int,
     db: Session = Depends(get_db)
 ):
-    request = db.query(MaintenanceRequest).filter(
-        MaintenanceRequest.id == request_id
-    ).first()
+    deleted = maintenance_service.delete_request(
+        db,
+        request_id
+    )
 
-    if request is None:
+    if not deleted:
         raise HTTPException(
             status_code=404,
             detail="Request not found"
         )
-
-    db.delete(request)
-    db.commit()
 
     return {"message": "Request deleted successfully"}
