@@ -1,10 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from schemas import MaintenanceRequestCreate, MaintenanceRequestUpdate
-from database import SessionLocal, engine, Base
-from services import maintenance_service
-
+from app.schemas import MaintenanceRequestCreate, MaintenanceRequestUpdate
+from app.database import SessionLocal, engine, Base
+from app.services import maintenance_service
 
 app = FastAPI()
 

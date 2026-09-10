@@ -1,8 +1,7 @@
 from sqlalchemy.orm import Session
 
-from models import MaintenanceRequest
-from schemas import MaintenanceRequestCreate, MaintenanceRequestUpdate
-
+from app.models import MaintenanceRequest
+from app.schemas import MaintenanceRequestCreate, MaintenanceRequestUpdate
 
 def create_request(
     db: Session,
