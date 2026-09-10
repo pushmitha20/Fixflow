@@ -90,10 +90,18 @@ def update_request(
     return request
 
 @app.delete("/requests/{request_id}")
-def delete_request(request_id: int):
-    for request in maintenance_requests:
-        if request["id"] == request_id:
-            maintenance_requests.remove(request)
-            return {"message": "Request deleted successfully"}
+def delete_request(
+    request_id: int,
+    db: Session = Depends(get_db)
+):
+    request = db.query(MaintenanceRequest).filter(
+        MaintenanceRequest.id == request_id
+    ).first()
 
-    return {"error": "Request not found"}
+    if request is None:
+        return {"error": "Request not found"}
+
+    db.delete(request)
+    db.commit()
+
+    return {"message": "Request deleted successfully"}
