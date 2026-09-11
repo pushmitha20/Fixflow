@@ -299,3 +299,33 @@ def test_update_user_invalid_role_returns_422():
     )
 
     assert response.status_code == 422
+
+
+def test_delete_user_deletes_existing_user():
+    create_response = client.post(
+        "/users",
+        json={
+            "name": "Hank Miller",
+            "email": "hank@example.com",
+            "role": "ADMIN",
+        },
+    )
+
+    assert create_response.status_code == 200
+    created_user = create_response.json()
+
+    response = client.delete(f"/users/{created_user['id']}")
+
+    assert response.status_code == 200
+    assert response.json() == {"message": "User deleted successfully"}
+
+    get_response = client.get(f"/users/{created_user['id']}")
+    assert get_response.status_code == 404
+    assert get_response.json() == {"detail": "User not found"}
+
+
+def test_delete_user_not_found_returns_404():
+    response = client.delete("/users/999999")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "User not found"}
