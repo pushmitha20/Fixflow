@@ -178,3 +178,32 @@ def test_get_users_returns_list_and_contains_created_user():
     assert user_found["name"] == created_user["name"]
     assert user_found["email"] == created_user["email"]
     assert user_found["role"] == created_user["role"]
+
+
+def test_get_user_returns_created_user_by_id():
+    create_response = client.post(
+        "/users",
+        json={
+            "name": "Dana White",
+            "email": "dana@example.com",
+            "role": "STUDENT",
+        },
+    )
+
+    assert create_response.status_code == 200
+    created_user = create_response.json()
+
+    response = client.get(f"/users/{created_user['id']}")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == created_user["id"]
+    assert response.json()["name"] == created_user["name"]
+    assert response.json()["email"] == created_user["email"]
+    assert response.json()["role"] == created_user["role"]
+
+
+def test_get_user_not_found_returns_404():
+    response = client.get("/users/999999")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "User not found"}
