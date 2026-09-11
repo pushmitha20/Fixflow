@@ -207,3 +207,95 @@ def test_get_user_not_found_returns_404():
 
     assert response.status_code == 404
     assert response.json() == {"detail": "User not found"}
+
+
+def test_update_user_updates_existing_user():
+    create_response = client.post(
+        "/users",
+        json={
+            "name": "Eve Adams",
+            "email": "eve@example.com",
+            "role": "STUDENT",
+        },
+    )
+
+    assert create_response.status_code == 200
+    created_user = create_response.json()
+
+    response = client.put(
+        f"/users/{created_user['id']}",
+        json={
+            "name": "Eve Updated",
+            "email": "eve.updated@example.com",
+            "role": "TECHNICIAN",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == created_user["id"]
+    assert data["name"] == "Eve Updated"
+    assert data["email"] == "eve.updated@example.com"
+    assert data["role"] == "TECHNICIAN"
+
+
+def test_update_user_not_found_returns_404():
+    response = client.put(
+        "/users/999999",
+        json={
+            "name": "Ghost User",
+            "email": "ghost@example.com",
+            "role": "ADMIN",
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "User not found"}
+
+
+def test_update_user_invalid_email_returns_422():
+    create_response = client.post(
+        "/users",
+        json={
+            "name": "Frank Lee",
+            "email": "frank@example.com",
+            "role": "STUDENT",
+        },
+    )
+
+    created_user = create_response.json()
+
+    response = client.put(
+        f"/users/{created_user['id']}",
+        json={
+            "name": "Frank Lee",
+            "email": "not-an-email",
+            "role": "STUDENT",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_user_invalid_role_returns_422():
+    create_response = client.post(
+        "/users",
+        json={
+            "name": "Grace Hall",
+            "email": "grace@example.com",
+            "role": "STUDENT",
+        },
+    )
+
+    created_user = create_response.json()
+
+    response = client.put(
+        f"/users/{created_user['id']}",
+        json={
+            "name": "Grace Hall",
+            "email": "grace@example.com",
+            "role": "GUEST",
+        },
+    )
+
+    assert response.status_code == 422

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database import Base, SessionLocal, engine
 from app.models import User
-from app.schemas import UserCreate, UserResponse
+from app.schemas import UserCreate, UserResponse, UserUpdate
 from app.services import user_service
 
 app = FastAPI(title="User Service")
@@ -37,6 +37,20 @@ def get_user(
     db: Session = Depends(get_db)
 ):
     user = user_service.get_user(db, user_id)
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user
+
+
+@app.put("/users/{user_id}", response_model=UserResponse)
+def update_user(
+    user_id: int,
+    user_data: UserUpdate,
+    db: Session = Depends(get_db)
+):
+    user = user_service.update_user(db, user_id, user_data)
 
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")

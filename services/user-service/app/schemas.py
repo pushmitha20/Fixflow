@@ -9,6 +9,12 @@ class UserCreate(BaseModel):
     role: Literal["STUDENT", "TECHNICIAN", "ADMIN"]
 
 
+class UserUpdate(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    email: EmailStr
+    role: Literal["STUDENT", "TECHNICIAN", "ADMIN"]
+
+
 class UserResponse(BaseModel):
     id: int
     name: str
