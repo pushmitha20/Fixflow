@@ -3,12 +3,31 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.main import app
-from app.database import Base
+from app.database import Base, SessionLocal
 from app.models import User
 from app.schemas import UserCreate, UserResponse
 
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def clear_users_table():
+    db = SessionLocal()
+    try:
+        db.query(User).delete()
+        db.commit()
+    finally:
+        db.close()
+
+    yield
+
+    db = SessionLocal()
+    try:
+        db.query(User).delete()
+        db.commit()
+    finally:
+        db.close()
 
 
 def test_health_check():
@@ -130,3 +149,32 @@ def test_create_user_invalid_role_returns_422():
     )
 
     assert response.status_code == 422
+
+
+def test_get_users_returns_list_and_contains_created_user():
+    create_response = client.post(
+        "/users",
+        json={
+            "name": "Charlie Brown",
+            "email": "charlie@example.com",
+            "role": "ADMIN",
+        },
+    )
+
+    assert create_response.status_code == 200
+    created_user = create_response.json()
+
+    response = client.get("/users")
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+    user_found = next(
+        (user for user in response.json() if user["id"] == created_user["id"]),
+        None,
+    )
+
+    assert user_found is not None
+    assert user_found["name"] == created_user["name"]
+    assert user_found["email"] == created_user["email"]
+    assert user_found["role"] == created_user["role"]

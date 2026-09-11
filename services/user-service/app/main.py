@@ -24,6 +24,13 @@ def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/users", response_model=list[UserResponse])
+def get_users(
+    db: Session = Depends(get_db)
+):
+    return user_service.get_users(db)
+
+
 @app.post("/users", response_model=UserResponse)
 def create_user(
     user: UserCreate,
