@@ -86,3 +86,47 @@ def test_user_response_contains_expected_fields_from_model():
         "email": "alice@example.com",
         "role": "STUDENT",
     }
+
+
+def test_create_user_valid_request_returns_user_data():
+    response = client.post(
+        "/users",
+        json={
+            "name": "Bob Smith",
+            "email": "bob@example.com",
+            "role": "TECHNICIAN",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Bob Smith"
+    assert data["email"] == "bob@example.com"
+    assert data["role"] == "TECHNICIAN"
+    assert "id" in data
+
+
+def test_create_user_invalid_email_returns_422():
+    response = client.post(
+        "/users",
+        json={
+            "name": "Bob Smith",
+            "email": "not-an-email",
+            "role": "TECHNICIAN",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_create_user_invalid_role_returns_422():
+    response = client.post(
+        "/users",
+        json={
+            "name": "Bob Smith",
+            "email": "bob@example.com",
+            "role": "GUEST",
+        },
+    )
+
+    assert response.status_code == 422
