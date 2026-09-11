@@ -33,6 +33,27 @@ def test_create_request():
     assert data["status"] == "OPEN"
 
 
+def test_create_request_response_schema_fields():
+    response = client.post(
+        "/requests",
+        json={
+            "title": "Schema check",
+            "description": "Verify response schema fields only",
+            "location": "Lab 02",
+            "priority": "MEDIUM"
+        }
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    expected_fields = {"id", "title", "description", "location", "priority", "status"}
+
+    assert expected_fields.issubset(data.keys())
+    assert set(data.keys()) == expected_fields
+
+
 def test_invalid_request():
     response = client.post(
         "/requests",

@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MaintenanceRequestCreate(BaseModel):
@@ -16,3 +16,14 @@ class MaintenanceRequestUpdate(BaseModel):
     location: str = Field(min_length=2, max_length=100)
     priority: Literal["LOW", "MEDIUM", "HIGH"]
     status: Literal["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]
+
+
+class MaintenanceRequestResponse(BaseModel):
+    id: int
+    title: str
+    description: str
+    location: str
+    priority: str
+    status: str
+
+    model_config = ConfigDict(from_attributes=True)
