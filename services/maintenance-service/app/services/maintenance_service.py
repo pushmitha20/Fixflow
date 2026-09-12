@@ -1,7 +1,9 @@
+from app.kafka_producer import publish_event
 from sqlalchemy.orm import Session
 
 from app.models import MaintenanceRequest
 from app.schemas import MaintenanceRequestCreate, MaintenanceRequestUpdate
+
 
 def create_request(
     db: Session,
@@ -18,6 +20,13 @@ def create_request(
     db.add(new_request)
     db.commit()
     db.refresh(new_request)
+
+    publish_event({
+        "eventType": "MaintenanceRequestCreated",
+        "requestId": new_request.id,
+        "location": new_request.location,
+        "priority": new_request.priority
+    })
 
     return new_request
 
