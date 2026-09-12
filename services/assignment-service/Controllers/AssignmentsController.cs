@@ -1,4 +1,5 @@
 using assignment_service.Data;
+using assignment_service.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,4 +23,22 @@ public class AssignmentsController : ControllerBase
 
         return Ok(assignments);
     }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateAssignment(
+        AssignmentCreateRequest request)
+    {
+        var assignment = new Assignment
+        {
+            MaintenanceRequestId = request.MaintenanceRequestId,
+            TechnicianId = request.TechnicianId
+        };
+
+        _db.Assignments.Add(assignment);
+
+        await _db.SaveChangesAsync();
+
+        return Ok(assignment);
+    }
 }
+
