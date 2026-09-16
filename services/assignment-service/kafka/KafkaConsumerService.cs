@@ -8,10 +8,14 @@ namespace assignment_service.Kafka;
 public class KafkaConsumerService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly KafkaProducerService _producer;
 
-    public KafkaConsumerService(IServiceScopeFactory scopeFactory)
+    public KafkaConsumerService(
+        IServiceScopeFactory scopeFactory,
+        KafkaProducerService producer)
     {
         _scopeFactory = scopeFactory;
+        _producer = producer;
     }
 
     protected override async Task ExecuteAsync(
@@ -64,6 +68,20 @@ public class KafkaConsumerService : BackgroundService
 
                 Console.WriteLine(
                     $"Assignment created: {assignment.Id}"
+                );
+
+                var assignedEvent = new MaintenanceRequestAssignedEvent
+                {
+                    RequestId = eventData.RequestId,
+                    UserId = eventData.UserId,
+                    AssignmentId = assignment.Id,
+                    TechnicianId = assignment.TechnicianId
+                };
+
+                _producer.PublishAssignmentCreated(assignedEvent);
+
+                Console.WriteLine(
+                    $"Assignment event published for request: {eventData.RequestId}"
                 );
             }
         }
