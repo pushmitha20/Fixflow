@@ -1,9 +1,19 @@
+using System.Text.Json;
 using Confluent.Kafka;
+using assignment_service.Events;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace assignment_service.Kafka;
 
 public class KafkaConsumerService : BackgroundService
 {
+    private readonly IServiceScopeFactory _scopeFactory;
+
+    public KafkaConsumerService(IServiceScopeFactory scopeFactory)
+    {
+        _scopeFactory = scopeFactory;
+    }
+
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
@@ -23,9 +33,39 @@ public class KafkaConsumerService : BackgroundService
         {
             var result = consumer.Consume(stoppingToken);
 
-            Console.WriteLine(
-                $"Received event: {result.Message.Value}"
+            var eventData = JsonSerializer.Deserialize<MaintenanceRequestCreatedEvent>(
+                result.Message.Value,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }
             );
+
+            if (eventData is not null)
+            {
+                Console.WriteLine(
+                    $"Maintenance request received: {eventData.RequestId}"
+                );
+
+                using var scope = _scopeFactory.CreateScope();
+
+                var db = scope.ServiceProvider
+                    .GetRequiredService<assignment_service.Data.AssignmentDbContext>();
+
+                var assignment = new assignment_service.Models.Assignment
+                {
+                    MaintenanceRequestId = eventData.RequestId,
+                    TechnicianId = 1
+                };
+
+                db.Assignments.Add(assignment);
+
+                await db.SaveChangesAsync(stoppingToken);
+
+                Console.WriteLine(
+                    $"Assignment created: {assignment.Id}"
+                );
+            }
         }
     }
 }
