@@ -15,6 +15,7 @@ builder.Services.AddDbContext<AssignmentDbContext>(options =>
 );
 
 builder.Services.AddControllers();
+builder.Services.AddSingleton<assignment_service.Kafka.KafkaProducerService>();
 builder.Services.AddHostedService<assignment_service.Kafka.KafkaConsumerService>();
 
 var app = builder.Build();
