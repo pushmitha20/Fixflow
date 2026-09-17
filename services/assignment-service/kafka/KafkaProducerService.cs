@@ -19,7 +19,13 @@ public class KafkaProducerService
 
         var message = new Message<Null, string>
         {
-            Value = JsonSerializer.Serialize(eventData)
+            Value = JsonSerializer.Serialize(
+                eventData,
+                new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }
+            )
         };
 
         producer.Produce(
