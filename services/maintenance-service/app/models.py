@@ -6,6 +6,7 @@ class MaintenanceRequest(Base):
     __tablename__ = "maintenance_requests"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=True)
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
     location = Column(String, nullable=False)

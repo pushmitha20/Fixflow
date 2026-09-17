@@ -10,6 +10,7 @@ def create_request(
     request: MaintenanceRequestCreate
 ):
     new_request = MaintenanceRequest(
+        user_id=request.user_id,
         title=request.title,
         description=request.description,
         location=request.location,
@@ -24,6 +25,7 @@ def create_request(
     publish_event({
         "eventType": "MaintenanceRequestCreated",
         "requestId": new_request.id,
+        "userId": new_request.user_id,
         "location": new_request.location,
         "priority": new_request.priority
     })
