@@ -1,13 +1,29 @@
+from contextlib import asynccontextmanager
+from threading import Thread
+
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
 from app import models
 from app.database import Base, SessionLocal, engine
+from app.kafka_consumer import consume_assignment_events
 from app.schemas import NotificationCreate, NotificationResponse
 from app.services import notification_service
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    consumer_thread = Thread(
+        target=consume_assignment_events,
+        daemon=True
+    )
+
+    consumer_thread.start()
+
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 Base.metadata.create_all(bind=engine)
 
@@ -26,10 +42,7 @@ def health_check():
     return {"status": "healthy"}
 
 
-@app.post(
-    "/notifications",
-    response_model=NotificationResponse
-)
+@app.post("/notifications", response_model=NotificationResponse)
 def create_notification(
     notification: NotificationCreate,
     db: Session = Depends(get_db)
