@@ -50,3 +50,47 @@ def test_get_user_by_id_route_exists(mock_get):
         "email": "alice@example.com",
         "role": "STUDENT",
     }
+@patch("app.main.httpx.post")
+def test_create_request_route(mock_post):
+    mock_post.return_value.status_code = 200
+    mock_post.return_value.json.return_value = {
+        "id": 27,
+        "title": "Projector issue",
+        "description": "Projector is not working",
+        "location": "Lab 03",
+        "priority": "HIGH",
+        "status": "OPEN"
+    }
+    mock_post.return_value.raise_for_status.return_value = None
+
+    response = client.post(
+        "/requests",
+        json={
+            "user_id": 2,
+            "title": "Projector issue",
+            "description": "Projector is not working",
+            "location": "Lab 03",
+            "priority": "HIGH"
+        }
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 27,
+        "title": "Projector issue",
+        "description": "Projector is not working",
+        "location": "Lab 03",
+        "priority": "HIGH",
+        "status": "OPEN"
+    }
+
+    mock_post.assert_called_once_with(
+        "http://localhost:8001/requests",
+        json={
+            "user_id": 2,
+            "title": "Projector issue",
+            "description": "Projector is not working",
+            "location": "Lab 03",
+            "priority": "HIGH"
+        }
+    )

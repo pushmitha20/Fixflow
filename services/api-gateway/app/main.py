@@ -21,3 +21,12 @@ def get_user(user_id: int):
     response = httpx.get(f"http://localhost:8002/users/{user_id}")
     response.raise_for_status()
     return response.json()
+
+@app.post("/requests")
+def create_request(request: dict):
+    response = httpx.post(
+        "http://localhost:8001/requests",
+        json=request
+    )
+    response.raise_for_status()
+    return response.json()
