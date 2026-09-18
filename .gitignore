@@ -9,4 +9,4 @@ venv/
 
 # IDE
 .vscode/
-.idea/
+.idea/.pytest_cache/
