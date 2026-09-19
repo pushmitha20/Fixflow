@@ -20,7 +20,7 @@ public class KafkaProducerService
         };
     }
 
-    public void PublishAssignmentCreated(
+    public virtual void PublishAssignmentCreated(
         MaintenanceRequestAssignedEvent eventData)
     {
         using var producer = new ProducerBuilder<Null, string>(_config)
