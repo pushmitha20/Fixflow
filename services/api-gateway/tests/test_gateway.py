@@ -126,3 +126,37 @@ def test_get_request_by_id_route(mock_get):
     mock_get.assert_called_once_with(
         "http://localhost:8001/requests/28"
     )
+
+
+@patch("app.main.httpx.get")
+def test_get_requests_route(mock_get):
+    mock_get.return_value.status_code = 200
+    mock_get.return_value.json.return_value = [
+        {
+            "id": 28,
+            "title": "Gateway test",
+            "description": "Testing request through API Gateway",
+            "location": "Lab 03",
+            "priority": "HIGH",
+            "status": "OPEN"
+        }
+    ]
+    mock_get.return_value.raise_for_status.return_value = None
+
+    response = client.get("/requests")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "id": 28,
+            "title": "Gateway test",
+            "description": "Testing request through API Gateway",
+            "location": "Lab 03",
+            "priority": "HIGH",
+            "status": "OPEN"
+        }
+    ]
+
+    mock_get.assert_called_once_with(
+        "http://localhost:8001/requests"
+    )
