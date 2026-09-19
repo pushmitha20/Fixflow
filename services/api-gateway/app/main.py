@@ -30,3 +30,17 @@ def create_request(request: dict):
     )
     response.raise_for_status()
     return response.json()
+
+
+@app.get("/requests")
+def get_requests():
+    response = httpx.get("http://localhost:8001/requests")
+    response.raise_for_status()
+    return response.json()
+
+
+@app.get("/requests/{request_id}")
+def get_request(request_id: int):
+    response = httpx.get(f"http://localhost:8001/requests/{request_id}")
+    response.raise_for_status()
+    return response.json()
