@@ -17,6 +17,7 @@ def test_create_request():
     response = client.post(
         "/requests",
         json={
+            "user_id": 1,
             "title": "Test projector",
             "description": "Testing request creation",
             "location": "Lab 01",
@@ -37,6 +38,7 @@ def test_create_request_response_schema_fields():
     response = client.post(
         "/requests",
         json={
+            "user_id": 1,
             "title": "Schema check",
             "description": "Verify response schema fields only",
             "location": "Lab 02",
