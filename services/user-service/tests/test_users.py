@@ -125,6 +125,34 @@ def test_create_user_valid_request_returns_user_data():
     assert "id" in data
 
 
+def test_create_user_duplicate_email_returns_409():
+    first = client.post(
+        "/users",
+        json={
+            "name": "Bob Smith",
+            "email": "bob@example.com",
+            "role": "TECHNICIAN",
+        },
+    )
+    assert first.status_code == 200
+
+    duplicate = client.post(
+        "/users",
+        json={
+            "name": "Bob Smith Duplicate",
+            "email": "bob@example.com",
+            "role": "STUDENT",
+        },
+    )
+
+    assert duplicate.status_code == 409
+    assert duplicate.json() == {"detail": "User with this email already exists"}
+
+    all_users = client.get("/users")
+    assert all_users.status_code == 200
+    assert len(all_users.json()) == 1
+
+
 def test_create_user_invalid_email_returns_422():
     response = client.post(
         "/users",
