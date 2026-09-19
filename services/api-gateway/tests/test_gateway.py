@@ -50,6 +50,8 @@ def test_get_user_by_id_route_exists(mock_get):
         "email": "alice@example.com",
         "role": "STUDENT",
     }
+
+
 @patch("app.main.httpx.post")
 def test_create_request_route(mock_post):
     mock_post.return_value.status_code = 200
@@ -93,4 +95,34 @@ def test_create_request_route(mock_post):
             "location": "Lab 03",
             "priority": "HIGH"
         }
+    )
+
+
+@patch("app.main.httpx.get")
+def test_get_request_by_id_route(mock_get):
+    mock_get.return_value.status_code = 200
+    mock_get.return_value.json.return_value = {
+        "id": 28,
+        "title": "Gateway test",
+        "description": "Testing request through API Gateway",
+        "location": "Lab 03",
+        "priority": "HIGH",
+        "status": "OPEN"
+    }
+    mock_get.return_value.raise_for_status.return_value = None
+
+    response = client.get("/requests/28")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 28,
+        "title": "Gateway test",
+        "description": "Testing request through API Gateway",
+        "location": "Lab 03",
+        "priority": "HIGH",
+        "status": "OPEN"
+    }
+
+    mock_get.assert_called_once_with(
+        "http://localhost:8001/requests/28"
     )
