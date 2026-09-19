@@ -1,3 +1,4 @@
+from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from app.models import User
@@ -5,6 +6,14 @@ from app.schemas import UserCreate, UserUpdate
 
 
 def create_user(db: Session, user: UserCreate):
+    existing_user = db.query(User).filter(User.email == user.email).first()
+    if existing_user is not None:
+        raise exc.IntegrityError(
+            statement=None,
+            params=None,
+            orig=Exception("User with this email already exists")
+        )
+
     new_user = User(
         name=user.name,
         email=user.email,
@@ -12,7 +21,11 @@ def create_user(db: Session, user: UserCreate):
     )
 
     db.add(new_user)
-    db.commit()
+    try:
+        db.commit()
+    except exc.IntegrityError as exc_error:
+        db.rollback()
+        raise exc_error
     db.refresh(new_user)
 
     return new_user
