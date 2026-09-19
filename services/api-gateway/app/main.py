@@ -22,6 +22,48 @@ def get_user(user_id: int):
     response.raise_for_status()
     return response.json()
 
+
+@app.get("/assignments")
+def get_assignments():
+    response = httpx.get("http://localhost:5251/assignments")
+    response.raise_for_status()
+    return response.json()
+
+
+@app.post("/assignments")
+def create_assignment(request: dict):
+    response = httpx.post(
+        "http://localhost:5251/assignments",
+        json=request
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+@app.get("/notifications")
+def get_notifications():
+    response = httpx.get("http://localhost:8003/notifications")
+    response.raise_for_status()
+    return response.json()
+
+
+@app.post("/notifications")
+def create_notification(request: dict):
+    response = httpx.post(
+        "http://localhost:8003/notifications",
+        json=request
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+@app.get("/analytics/summary")
+def get_analytics_summary():
+    response = httpx.get("http://localhost:8004/analytics/summary")
+    response.raise_for_status()
+    return response.json()
+
+
 @app.post("/requests")
 def create_request(request: dict):
     response = httpx.post(
