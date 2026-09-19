@@ -1,4 +1,5 @@
 import json
+import os
 
 from confluent_kafka import Consumer
 from sqlalchemy.orm import Session
@@ -8,7 +9,7 @@ from app.models import Notification
 
 
 consumer = Consumer({
-    "bootstrap.servers": "localhost:9092",
+    "bootstrap.servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
     "group.id": "fixflow-notification-service",
     "auto.offset.reset": "latest"
 })
