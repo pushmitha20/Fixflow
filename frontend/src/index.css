@@ -19,6 +19,12 @@
   --ff-font-ui: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   --ff-font-display: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 
+  --ff-motion-fast: 180ms;
+  --ff-motion-normal: 260ms;
+  --ff-motion-slow: 340ms;
+  --ff-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --ff-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+
   color-scheme: light;
   font-family: var(--ff-font-ui);
   line-height: 1.5;
@@ -75,10 +81,11 @@ button {
 button,
 a {
   transition:
-    background-color 160ms ease,
-    border-color 160ms ease,
-    transform 160ms ease,
-    opacity 160ms ease;
+    background-color var(--ff-motion-fast) var(--ff-ease-standard),
+    border-color var(--ff-motion-fast) var(--ff-ease-standard),
+    transform var(--ff-motion-fast) var(--ff-ease-standard),
+    opacity var(--ff-motion-fast) var(--ff-ease-standard),
+    box-shadow var(--ff-motion-fast) var(--ff-ease-standard);
 }
 
 :focus-visible {
@@ -360,6 +367,76 @@ h2 {
   border-color: rgba(23, 107, 99, 0.18);
 }
 
+.ff-motion-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 10px;
+  padding: 0.72rem 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  background: var(--ff-white);
+  color: var(--ff-ink);
+  transition:
+    background-color var(--ff-motion-fast) var(--ff-ease-standard),
+    border-color var(--ff-motion-fast) var(--ff-ease-standard),
+    transform var(--ff-motion-fast) var(--ff-ease-standard),
+    box-shadow var(--ff-motion-fast) var(--ff-ease-standard);
+}
+
+.ff-motion-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(23, 107, 99, 0.2);
+}
+
+.ff-motion-button--primary {
+  background: var(--ff-brand);
+  border-color: var(--ff-brand);
+  color: var(--ff-white);
+}
+
+.ff-motion-button--primary:hover {
+  background: var(--ff-brand-dark);
+}
+
+.ff-motion-button__arrow {
+  display: inline-flex;
+  transition: transform var(--ff-motion-fast) var(--ff-ease-emphasized);
+}
+
+.ff-motion-button:hover .ff-motion-button__arrow {
+  transform: translateX(3px);
+}
+
+.ff-navigation-row,
+.ff-list-row {
+  transition:
+    background-color var(--ff-motion-fast) var(--ff-ease-standard),
+    border-color var(--ff-motion-fast) var(--ff-ease-standard),
+    transform var(--ff-motion-fast) var(--ff-ease-standard);
+}
+
+.ff-navigation-row:hover,
+.ff-list-row:hover {
+  background: rgba(221, 234, 228, 0.32);
+  border-color: rgba(23, 107, 99, 0.14);
+  transform: translateX(2px);
+}
+
+.ff-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity var(--ff-motion-normal) var(--ff-ease-standard),
+    transform var(--ff-motion-normal) var(--ff-ease-standard);
+}
+
+.ff-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .ff-shell-main {
   width: 100%;
   padding: 28px;
@@ -463,15 +540,23 @@ h2 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ff-nav,
-  .ff-nav__item,
-  .ff-topbar__search,
-  .ff-topbar__action,
-  .ff-topbar__profile,
-  .ff-topbar__menu,
-  .ff-button,
-  button,
-  a {
-    transition: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .ff-reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .ff-motion-button:hover .ff-motion-button__arrow,
+  .ff-navigation-row:hover,
+  .ff-list-row:hover {
+    transform: none;
   }
 }
