@@ -6,10 +6,19 @@ namespace assignment_service.Kafka;
 
 public class KafkaProducerService
 {
-    private readonly ProducerConfig _config = new()
+    private readonly ProducerConfig _config;
+
+    public KafkaProducerService()
     {
-        BootstrapServers = "localhost:9092"
-    };
+        var bootstrapServers = Environment.GetEnvironmentVariable(
+            "KAFKA_BOOTSTRAP_SERVERS"
+        ) ?? "localhost:9092";
+
+        _config = new ProducerConfig
+        {
+            BootstrapServers = bootstrapServers
+        };
+    }
 
     public void PublishAssignmentCreated(
         MaintenanceRequestAssignedEvent eventData)
