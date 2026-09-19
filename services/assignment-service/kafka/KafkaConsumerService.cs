@@ -21,9 +21,13 @@ public class KafkaConsumerService : BackgroundService
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
+        var bootstrapServers = Environment.GetEnvironmentVariable(
+            "KAFKA_BOOTSTRAP_SERVERS"
+        ) ?? "localhost:9092";
+
         var config = new ConsumerConfig
         {
-            BootstrapServers = "localhost:9092",
+            BootstrapServers = bootstrapServers,
             GroupId = "fixflow-assignment-service",
             AutoOffsetReset = AutoOffsetReset.Latest
         };
