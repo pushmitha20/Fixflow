@@ -27,33 +27,36 @@ def consume_assignment_events():
             print(f"Kafka error: {message.error()}")
             continue
 
-        event_data = json.loads(message.value().decode("utf-8"))
-
-        print(
-            f"Assignment event received: "
-            f"{event_data['requestId']}"
-        )
-
-        db: Session = SessionLocal()
-
         try:
-            notification = Notification(
-                user_id=event_data["userId"],
-                message=(
-                    f"Maintenance request "
-                    f"#{event_data['requestId']} "
-                    f"has been assigned to a technician."
-                ),
-                type="ASSIGNMENT"
-            )
-
-            db.add(notification)
-            db.commit()
-            db.refresh(notification)
+            event_data = json.loads(message.value().decode("utf-8"))
 
             print(
-                f"Notification created: {notification.id}"
+                f"Assignment event received: "
+                f"{event_data['requestId']}"
             )
 
-        finally:
-            db.close()
+            db: Session = SessionLocal()
+
+            try:
+                notification = Notification(
+                    user_id=event_data["userId"],
+                    message=(
+                        f"Maintenance request "
+                        f"#{event_data['requestId']} "
+                        f"has been assigned to a technician."
+                    ),
+                    type="ASSIGNMENT"
+                )
+
+                db.add(notification)
+                db.commit()
+                db.refresh(notification)
+
+                print(
+                    f"Notification created: {notification.id}"
+                )
+
+            finally:
+                db.close()
+        except Exception as e:
+            print(f"Error processing assignment event: {e}")
