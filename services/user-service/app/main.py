@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI, HTTPException
+from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from app.database import Base, SessionLocal, engine
@@ -76,4 +77,9 @@ def create_user(
     user: UserCreate,
     db: Session = Depends(get_db)
 ):
-    return user_service.create_user(db, user)
+    try:
+        return user_service.create_user(db, user)
+    except exc.IntegrityError as exc_error:
+        if "users_email_key" in str(exc_error.orig) or "already exists" in str(exc_error.orig):
+            raise HTTPException(status_code=409, detail="User with this email already exists") from exc_error
+        raise HTTPException(status_code=400, detail="Unable to create user") from exc_error
