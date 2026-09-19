@@ -1,4 +1,6 @@
 using assignment_service.Data;
+using assignment_service.Events;
+using assignment_service.Kafka;
 using assignment_service.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +12,14 @@ namespace assignment_service.Controllers;
 public class AssignmentsController : ControllerBase
 {
     private readonly AssignmentDbContext _db;
+    private readonly KafkaProducerService _producer;
 
-    public AssignmentsController(AssignmentDbContext db)
+    public AssignmentsController(
+        AssignmentDbContext db,
+        KafkaProducerService producer)
     {
         _db = db;
+        _producer = producer;
     }
 
     [HttpGet]
@@ -37,6 +43,16 @@ public class AssignmentsController : ControllerBase
         _db.Assignments.Add(assignment);
 
         await _db.SaveChangesAsync();
+
+        var assignedEvent = new MaintenanceRequestAssignedEvent
+        {
+            RequestId = assignment.MaintenanceRequestId,
+            UserId = request.UserId,
+            AssignmentId = assignment.Id,
+            TechnicianId = assignment.TechnicianId
+        };
+
+        _producer.PublishAssignmentCreated(assignedEvent);
 
         return Ok(assignment);
     }
