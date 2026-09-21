@@ -16,9 +16,13 @@ import {
   RecentRequests,
 } from './components'
 
-export default function Dashboard() {
+type DashboardProps = {
+  onNavigate?: (item: string) => void
+}
+
+export default function Dashboard({ onNavigate }: DashboardProps) {
   return (
-    <AppLayout title="Dashboard" subtitle="Operations centre">
+    <AppLayout title="Dashboard" subtitle="Operations centre" onNavigate={onNavigate}>
       <div className="ff-dashboard">
         <Reveal as="header" className="ff-dashboard__intro" delay={40}>
           <div>
