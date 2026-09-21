@@ -6,21 +6,28 @@ type AppLayoutProps = {
   title?: string
   subtitle?: string
   children?: ReactNode
+  onNavigate?: (item: string) => void
 }
 
 export default function AppLayout({
   title = 'Dashboard',
   subtitle = 'Operations centre',
   children,
+  onNavigate,
 }: AppLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+
+  const handleNavigate = (item: string) => {
+    onNavigate?.(item)
+    setMobileNavOpen(false)
+  }
 
   return (
     <div className="ff-app-shell">
       <Navigation
         activeItem={title}
         mobileOpen={mobileNavOpen}
-        onNavigate={() => setMobileNavOpen(false)}
+        onNavigate={handleNavigate}
       />
 
       <div className="ff-app-shell__content">
