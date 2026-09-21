@@ -8,6 +8,7 @@ import type {
   RequestPriority,
   RequestStatus,
 } from '../../types/api'
+import CreateRequestDialog from './CreateRequestDialog'
 
 type RequestsProps = {
   onNavigate?: (item: string) => void
@@ -64,6 +65,8 @@ export default function Requests({ onNavigate }: RequestsProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('ALL')
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const loadRequests = async () => {
     setIsLoading(true)
@@ -126,6 +129,24 @@ export default function Requests({ onNavigate }: RequestsProps) {
     setPriorityFilter('ALL')
   }
 
+  const handleRequestCreated = (createdRequest: MaintenanceRequest) => {
+    setRequests((current) => [createdRequest, ...current])
+    setError(null)
+    setSuccessMessage(`Request "${createdRequest.title}" was created successfully.`)
+  }
+
+  useEffect(() => {
+    if (!successMessage) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSuccessMessage(null)
+    }, 3000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [successMessage])
+
   return (
     <AppLayout title="Requests" subtitle="Maintenance desk" onNavigate={onNavigate}>
       <div className="ff-requests">
@@ -134,15 +155,16 @@ export default function Requests({ onNavigate }: RequestsProps) {
             <p className="label">Maintenance requests</p>
             <h1>Track, prioritize, and manage maintenance requests across facilities.</h1>
           </div>
-          <MotionButton
-            variant="primary"
-            arrow
-            aria-disabled="true"
-            title="Create Request is not available in this step"
-          >
+          <MotionButton variant="primary" arrow onClick={() => setIsCreateOpen(true)}>
             New Request
           </MotionButton>
         </Reveal>
+
+        {successMessage ? (
+          <div className="ff-form-status ff-form-status--success" role="status">
+            {successMessage}
+          </div>
+        ) : null}
 
         <Reveal className="ff-requests__workspace" delay={80}>
           <section className="ff-requests__toolbar" aria-label="Request filters">
@@ -271,6 +293,12 @@ export default function Requests({ onNavigate }: RequestsProps) {
           </section>
         </Reveal>
       </div>
+
+      <CreateRequestDialog
+        open={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onCreated={handleRequestCreated}
+      />
     </AppLayout>
   )
 }
