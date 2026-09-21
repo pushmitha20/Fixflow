@@ -86,3 +86,20 @@ def get_request(request_id: int):
     response = httpx.get(f"http://localhost:8001/requests/{request_id}")
     response.raise_for_status()
     return response.json()
+
+
+@app.put("/requests/{request_id}")
+def update_request(request_id: int, request: dict):
+    response = httpx.put(
+        f"http://localhost:8001/requests/{request_id}",
+        json=request
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+@app.delete("/requests/{request_id}")
+def delete_request(request_id: int):
+    response = httpx.delete(f"http://localhost:8001/requests/{request_id}")
+    response.raise_for_status()
+    return response.json()

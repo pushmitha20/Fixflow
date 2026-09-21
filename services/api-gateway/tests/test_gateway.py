@@ -160,3 +160,69 @@ def test_get_requests_route(mock_get):
     mock_get.assert_called_once_with(
         "http://localhost:8001/requests"
     )
+
+
+@patch("app.main.httpx.put")
+def test_update_request_route(mock_put):
+    mock_put.return_value.status_code = 200
+    mock_put.return_value.json.return_value = {
+        "id": 28,
+        "title": "Updated gateway test",
+        "description": "Testing request update through API Gateway",
+        "location": "Lab 04",
+        "priority": "MEDIUM",
+        "status": "IN_PROGRESS"
+    }
+    mock_put.return_value.raise_for_status.return_value = None
+
+    response = client.put(
+        "/requests/28",
+        json={
+            "title": "Updated gateway test",
+            "description": "Testing request update through API Gateway",
+            "location": "Lab 04",
+            "priority": "MEDIUM",
+            "status": "IN_PROGRESS"
+        }
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 28,
+        "title": "Updated gateway test",
+        "description": "Testing request update through API Gateway",
+        "location": "Lab 04",
+        "priority": "MEDIUM",
+        "status": "IN_PROGRESS"
+    }
+
+    mock_put.assert_called_once_with(
+        "http://localhost:8001/requests/28",
+        json={
+            "title": "Updated gateway test",
+            "description": "Testing request update through API Gateway",
+            "location": "Lab 04",
+            "priority": "MEDIUM",
+            "status": "IN_PROGRESS"
+        }
+    )
+
+
+@patch("app.main.httpx.delete")
+def test_delete_request_route(mock_delete):
+    mock_delete.return_value.status_code = 200
+    mock_delete.return_value.json.return_value = {
+        "message": "Request deleted successfully"
+    }
+    mock_delete.return_value.raise_for_status.return_value = None
+
+    response = client.delete("/requests/28")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "message": "Request deleted successfully"
+    }
+
+    mock_delete.assert_called_once_with(
+        "http://localhost:8001/requests/28"
+    )
