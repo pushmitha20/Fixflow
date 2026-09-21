@@ -2,23 +2,23 @@ import { ApiError } from '../types/api'
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
-type QueryParams = Record<string, string | number | boolean | undefined>
+export type QueryParams = Record<string, string | number | boolean | null | undefined>
 
-type RequestOptions<TBody = unknown> = {
-  method?: HttpMethod
+export type ApiClientOptions = {
   params?: QueryParams
   headers?: HeadersInit
+}
+
+type RequestOptions<TBody = unknown> = ApiClientOptions & {
+  method?: HttpMethod
   body?: TBody
 }
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
-
-if (!apiBaseUrl) {
-  throw new Error('Missing VITE_API_BASE_URL environment variable.')
-}
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL?.trim() || 'http://localhost:8000'
 
 const buildUrl = (path: string, params?: QueryParams) => {
-  const baseUrl = apiBaseUrl.replace(/\/+$/, '')
+  const baseUrl = API_BASE_URL.replace(/\/+$/, '')
   const cleanPath = path.startsWith('/') ? path : `/${path}`
   const url = new URL(`${baseUrl}${cleanPath}`)
 
@@ -38,6 +38,10 @@ const buildUrl = (path: string, params?: QueryParams) => {
 }
 
 const parseResponse = async (response: Response) => {
+  if (response.status === 204) {
+    return null
+  }
+
   const contentType = response.headers.get('content-type') ?? ''
   const text = await response.text()
 
@@ -88,7 +92,7 @@ export async function request<TResponse>(
   const hasBody = body !== undefined && body !== null && method !== 'GET'
   const requestHeaders = new Headers(headers ?? undefined)
 
-  if (hasBody && !(body instanceof FormData)) {
+  if (hasBody && !requestHeaders.has('Content-Type')) {
     requestHeaders.set('Content-Type', 'application/json')
   }
 
@@ -102,6 +106,7 @@ export async function request<TResponse>(
     const payload = await parseResponse(response)
     throw new ApiError(
       response.status,
+      response.statusText,
       getErrorMessage(payload, response.statusText || 'Request failed'),
       payload,
     )
@@ -111,20 +116,20 @@ export async function request<TResponse>(
 }
 
 export const apiClient = {
-  get<TResponse>(path: string, params?: QueryParams) {
-    return request<TResponse>(path, { method: 'GET', params })
+  get<TResponse>(path: string, options: ApiClientOptions = {}) {
+    return request<TResponse>(path, { ...options, method: 'GET' })
   },
-  post<TResponse>(path: string, body?: unknown, params?: QueryParams) {
-    return request<TResponse>(path, { method: 'POST', params, body })
+  post<TResponse>(path: string, body?: unknown, options: ApiClientOptions = {}) {
+    return request<TResponse>(path, { ...options, method: 'POST', body })
   },
-  put<TResponse>(path: string, body?: unknown, params?: QueryParams) {
-    return request<TResponse>(path, { method: 'PUT', params, body })
+  put<TResponse>(path: string, body?: unknown, options: ApiClientOptions = {}) {
+    return request<TResponse>(path, { ...options, method: 'PUT', body })
   },
-  patch<TResponse>(path: string, body?: unknown, params?: QueryParams) {
-    return request<TResponse>(path, { method: 'PATCH', params, body })
+  patch<TResponse>(path: string, body?: unknown, options: ApiClientOptions = {}) {
+    return request<TResponse>(path, { ...options, method: 'PATCH', body })
   },
-  delete<TResponse>(path: string, params?: QueryParams) {
-    return request<TResponse>(path, { method: 'DELETE', params })
+  delete<TResponse>(path: string, options: ApiClientOptions = {}) {
+    return request<TResponse>(path, { ...options, method: 'DELETE' })
   },
 }
 
