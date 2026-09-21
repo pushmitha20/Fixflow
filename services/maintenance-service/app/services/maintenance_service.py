@@ -1,8 +1,13 @@
-from app.kafka_producer import publish_event
+import logging
+
+from app.kafka_producer import KafkaPublishError, publish_event
 from sqlalchemy.orm import Session
 
 from app.models import MaintenanceRequest
 from app.schemas import MaintenanceRequestCreate, MaintenanceRequestUpdate
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_request(
@@ -22,13 +27,21 @@ def create_request(
     db.commit()
     db.refresh(new_request)
 
-    publish_event({
+    event = {
         "eventType": "MaintenanceRequestCreated",
         "requestId": new_request.id,
         "userId": new_request.user_id,
         "location": new_request.location,
         "priority": new_request.priority
-    })
+    }
+
+    try:
+        publish_event(event)
+    except KafkaPublishError:
+        logger.exception(
+            "Maintenance request %s was persisted, but Kafka publication failed",
+            new_request.id
+        )
 
     return new_request
 
