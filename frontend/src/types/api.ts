@@ -49,3 +49,7 @@ export type UpdateMaintenanceRequest = {
   priority: RequestPriority
   status: RequestStatus
 }
+
+export type DeleteMaintenanceRequestResponse = {
+  message: string
+}
