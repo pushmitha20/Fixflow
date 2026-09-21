@@ -14,6 +14,35 @@ def test_health_check():
     assert response.json() == {"status": "healthy"}
 
 
+def test_requests_cors_preflight_allows_vite_origin():
+    response = client.options(
+        "/requests",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "Content-Type",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+    assert "GET" in response.headers["access-control-allow-methods"]
+    assert "Content-Type" in response.headers["access-control-allow-headers"]
+
+
+def test_requests_cors_preflight_rejects_unknown_origin():
+    response = client.options(
+        "/requests",
+        headers={
+            "Origin": "http://example.com",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "access-control-allow-origin" not in response.headers
+
+
 @patch("app.main.httpx.get")
 def test_get_users_route_exists(mock_get):
     mock_get.return_value.status_code = 200
