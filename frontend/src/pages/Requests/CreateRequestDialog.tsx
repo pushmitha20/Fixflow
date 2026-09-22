@@ -81,6 +81,7 @@ export default function CreateRequestDialog({
   const [errors, setErrors] = useState<CreateRequestErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const isSubmitLockedRef = useRef(false)
   const titleInputRef = useRef<HTMLInputElement | null>(null)
 
   const resetFormState = useCallback(() => {
@@ -88,6 +89,7 @@ export default function CreateRequestDialog({
     setErrors({})
     setSubmitError(null)
     setIsSubmitting(false)
+    isSubmitLockedRef.current = false
   }, [])
 
   const handleClose = useCallback(() => {
@@ -137,14 +139,16 @@ export default function CreateRequestDialog({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (isSubmitting) {
+    if (isSubmitting || isSubmitLockedRef.current) {
       return
     }
 
+    isSubmitLockedRef.current = true
     const nextErrors = validateForm(form)
     setErrors(nextErrors)
 
     if (Object.keys(nextErrors).length > 0) {
+      isSubmitLockedRef.current = false
       return
     }
 
@@ -172,6 +176,7 @@ export default function CreateRequestDialog({
 
       setSubmitError(message)
     } finally {
+      isSubmitLockedRef.current = false
       setIsSubmitting(false)
     }
   }
