@@ -686,6 +686,7 @@ h2 {
 }
 
 .ff-form-row input,
+.ff-form-row select,
 .ff-form-row textarea {
   width: 100%;
   border: 1px solid var(--ff-border);
@@ -696,6 +697,7 @@ h2 {
 }
 
 .ff-form-row input:focus,
+.ff-form-row select:focus,
 .ff-form-row textarea:focus {
   border-color: rgba(23, 107, 99, 0.34);
 }
@@ -922,11 +924,27 @@ h2 {
   overflow-wrap: anywhere;
 }
 
+.ff-details-drawer__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ff-detail-edit-button {
+  min-height: 38px;
+  padding: 0.55rem 0.82rem;
+}
+
 .ff-details-drawer__body {
   flex: 1;
   min-height: 0;
   overflow: auto;
   padding: 20px;
+}
+
+.ff-details-drawer__body > .ff-form-status {
+  margin-bottom: 16px;
 }
 
 .ff-detail-content {
@@ -1024,6 +1042,51 @@ h2 {
 .ff-detail-state p:not(.label) {
   color: var(--ff-muted);
   font-size: 0.92rem;
+}
+
+.ff-detail-edit-form {
+  display: grid;
+  gap: 16px;
+}
+
+.ff-detail-edit-form .ff-form-row textarea {
+  min-height: 150px;
+}
+
+.ff-detail-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ff-detail-edit-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--ff-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.ff-detail-edit-meta div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ff-detail-edit-meta span {
+  color: var(--ff-muted);
+  font-size: 0.7rem;
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ff-detail-edit-meta strong {
+  color: var(--ff-ink);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
 }
 
 @keyframes ff-skeleton {
@@ -1503,6 +1566,19 @@ h2 {
   .ff-details-drawer__header,
   .ff-details-drawer__body {
     padding: 18px 14px;
+  }
+
+  .ff-details-drawer__header {
+    gap: 10px;
+  }
+
+  .ff-details-drawer__actions {
+    align-items: flex-start;
+  }
+
+  .ff-detail-edit-grid,
+  .ff-detail-edit-meta {
+    grid-template-columns: 1fr;
   }
 
   .ff-detail-list > div {

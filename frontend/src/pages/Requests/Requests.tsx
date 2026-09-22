@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { FormEvent } from 'react'
 import AppLayout from '../../components/layout/AppLayout'
 import MotionButton from '../../components/MotionButton'
 import Reveal from '../../components/Reveal'
@@ -7,6 +8,7 @@ import type {
   MaintenanceRequest,
   RequestPriority,
   RequestStatus,
+  UpdateMaintenanceRequest,
 } from '../../types/api'
 import CreateRequestDialog from './CreateRequestDialog'
 
@@ -16,6 +18,8 @@ type RequestsProps = {
 
 type StatusFilter = RequestStatus | 'ALL'
 type PriorityFilter = RequestPriority | 'ALL'
+type RequestEditForm = UpdateMaintenanceRequest
+type RequestEditErrors = Partial<Record<keyof RequestEditForm, string>>
 
 const statusOptions: Array<{ label: string; value: StatusFilter }> = [
   { label: 'All', value: 'ALL' },
@@ -27,6 +31,19 @@ const statusOptions: Array<{ label: string; value: StatusFilter }> = [
 
 const priorityOptions: Array<{ label: string; value: PriorityFilter }> = [
   { label: 'All', value: 'ALL' },
+  { label: 'High', value: 'HIGH' },
+  { label: 'Medium', value: 'MEDIUM' },
+  { label: 'Low', value: 'LOW' },
+]
+
+const editableStatusOptions: Array<{ label: string; value: RequestStatus }> = [
+  { label: 'Open', value: 'OPEN' },
+  { label: 'In Progress', value: 'IN_PROGRESS' },
+  { label: 'Resolved', value: 'RESOLVED' },
+  { label: 'Closed', value: 'CLOSED' },
+]
+
+const editablePriorityOptions: Array<{ label: string; value: RequestPriority }> = [
   { label: 'High', value: 'HIGH' },
   { label: 'Medium', value: 'MEDIUM' },
   { label: 'Low', value: 'LOW' },
@@ -75,6 +92,46 @@ const formatOptionalDateTime = (value?: string) => {
   }).format(date)
 }
 
+const isRequestPriority = (value: string): value is RequestPriority =>
+  editablePriorityOptions.some((option) => option.value === value)
+
+const isRequestStatus = (value: string): value is RequestStatus =>
+  editableStatusOptions.some((option) => option.value === value)
+
+const createEditForm = (request: MaintenanceRequest): RequestEditForm => ({
+  title: request.title,
+  description: request.description,
+  location: request.location,
+  priority: request.priority,
+  status: request.status,
+})
+
+const validateEditForm = (form: RequestEditForm) => {
+  const errors: RequestEditErrors = {}
+
+  if (!form.title.trim()) {
+    errors.title = 'Title is required.'
+  }
+
+  if (!form.description.trim()) {
+    errors.description = 'Description is required.'
+  }
+
+  if (!form.location.trim()) {
+    errors.location = 'Location is required.'
+  }
+
+  if (!isRequestPriority(form.priority)) {
+    errors.priority = 'Choose a valid priority.'
+  }
+
+  if (!isRequestStatus(form.status)) {
+    errors.status = 'Choose a valid status.'
+  }
+
+  return errors
+}
+
 export default function Requests({ onNavigate }: RequestsProps) {
   const [requests, setRequests] = useState<MaintenanceRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -88,6 +145,7 @@ export default function Requests({ onNavigate }: RequestsProps) {
   const [detailRequest, setDetailRequest] = useState<MaintenanceRequest | null>(null)
   const [isDetailLoading, setIsDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
+  const [detailSuccessMessage, setDetailSuccessMessage] = useState<string | null>(null)
 
   const isDetailOpen = selectedRequestId !== null
 
@@ -155,6 +213,7 @@ export default function Requests({ onNavigate }: RequestsProps) {
   const loadRequestDetails = useCallback(async (requestId: number) => {
     setIsDetailLoading(true)
     setDetailError(null)
+    setDetailSuccessMessage(null)
     setDetailRequest(null)
 
     try {
@@ -169,12 +228,14 @@ export default function Requests({ onNavigate }: RequestsProps) {
 
   const handleSelectRequest = (requestId: number) => {
     setSelectedRequestId(requestId)
+    setDetailSuccessMessage(null)
   }
 
   const handleCloseDetails = useCallback(() => {
     setSelectedRequestId(null)
     setDetailRequest(null)
     setDetailError(null)
+    setDetailSuccessMessage(null)
     setIsDetailLoading(false)
   }, [])
 
@@ -182,6 +243,17 @@ export default function Requests({ onNavigate }: RequestsProps) {
     setRequests((current) => [createdRequest, ...current])
     setError(null)
     setSuccessMessage(`Request "${createdRequest.title}" was created successfully.`)
+  }
+
+  const handleRequestUpdated = (updatedRequest: MaintenanceRequest) => {
+    setRequests((current) =>
+      current.map((request) =>
+        request.id === updatedRequest.id ? updatedRequest : request,
+      ),
+    )
+    setDetailRequest(updatedRequest)
+    setDetailError(null)
+    setDetailSuccessMessage(`Request "${updatedRequest.title}" was updated successfully.`)
   }
 
   useEffect(() => {
@@ -389,12 +461,15 @@ export default function Requests({ onNavigate }: RequestsProps) {
       />
 
       <RequestDetailsDrawer
+        key={selectedRequestId ?? 'closed-request-details'}
         open={isDetailOpen}
         request={detailRequest}
         requestId={selectedRequestId}
         isLoading={isDetailLoading}
         error={detailError}
+        successMessage={detailSuccessMessage}
         onClose={handleCloseDetails}
+        onUpdated={handleRequestUpdated}
         onRetry={() => {
           if (selectedRequestId !== null) {
             loadRequestDetails(selectedRequestId)
@@ -426,7 +501,9 @@ type RequestDetailsDrawerProps = {
   requestId: number | null
   isLoading: boolean
   error: string | null
+  successMessage: string | null
   onClose: () => void
+  onUpdated: (request: MaintenanceRequest) => void
   onRetry: () => void
 }
 
@@ -436,10 +513,40 @@ function RequestDetailsDrawer({
   requestId,
   isLoading,
   error,
+  successMessage,
   onClose,
+  onUpdated,
   onRetry,
 }: RequestDetailsDrawerProps) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+  const titleInputRef = useRef<HTMLInputElement | null>(null)
+  const saveLockRef = useRef(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState<RequestEditForm | null>(null)
+  const [editErrors, setEditErrors] = useState<RequestEditErrors>({})
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleCancelEdit = useCallback(() => {
+    if (request) {
+      setEditForm(createEditForm(request))
+    }
+
+    setIsEditing(false)
+    setEditErrors({})
+    setSaveError(null)
+    setIsSaving(false)
+    saveLockRef.current = false
+  }, [request])
+
+  const handleDrawerClose = useCallback(() => {
+    if (isEditing) {
+      handleCancelEdit()
+      return
+    }
+
+    onClose()
+  }, [handleCancelEdit, isEditing, onClose])
 
   useEffect(() => {
     if (!open) {
@@ -452,7 +559,7 @@ function RequestDetailsDrawer({
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose()
+        handleDrawerClose()
       }
     }
 
@@ -462,7 +569,19 @@ function RequestDetailsDrawer({
       window.clearTimeout(focusTimer)
       window.removeEventListener('keydown', handleEscape)
     }
-  }, [onClose, open])
+  }, [handleDrawerClose, open])
+
+  useEffect(() => {
+    if (!isEditing) {
+      return undefined
+    }
+
+    const focusTimer = window.setTimeout(() => {
+      titleInputRef.current?.focus()
+    }, 40)
+
+    return () => window.clearTimeout(focusTimer)
+  }, [isEditing])
 
   if (!open) {
     return null
@@ -471,8 +590,76 @@ function RequestDetailsDrawer({
   const formattedCreatedAt = formatOptionalDateTime(request?.created_at)
   const formattedUpdatedAt = formatOptionalDateTime(request?.updated_at)
 
+  const handleStartEdit = () => {
+    if (!request) {
+      return
+    }
+
+    setEditForm(createEditForm(request))
+    setEditErrors({})
+    setSaveError(null)
+    setIsEditing(true)
+  }
+
+  const updateEditField = <TKey extends keyof RequestEditForm>(
+    field: TKey,
+    value: RequestEditForm[TKey],
+  ) => {
+    setEditForm((current) => current ? { ...current, [field]: value } : current)
+    setEditErrors((current) => {
+      if (!current[field]) {
+        return current
+      }
+
+      const nextErrors = { ...current }
+      delete nextErrors[field]
+      return nextErrors
+    })
+    setSaveError(null)
+  }
+
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (!request || !editForm || saveLockRef.current) {
+      return
+    }
+
+    const normalizedForm: RequestEditForm = {
+      title: editForm.title.trim(),
+      description: editForm.description.trim(),
+      location: editForm.location.trim(),
+      priority: editForm.priority,
+      status: editForm.status,
+    }
+    const validationErrors = validateEditForm(normalizedForm)
+
+    if (Object.keys(validationErrors).length > 0) {
+      setEditErrors(validationErrors)
+      setSaveError(null)
+      return
+    }
+
+    saveLockRef.current = true
+    setIsSaving(true)
+    setEditErrors({})
+    setSaveError(null)
+
+    try {
+      const updatedRequest = await requestService.updateRequest(request.id, normalizedForm)
+      onUpdated(updatedRequest)
+      setEditForm(createEditForm(updatedRequest))
+      setIsEditing(false)
+    } catch {
+      setSaveError('Request could not be updated. Check the gateway connection and try again.')
+    } finally {
+      saveLockRef.current = false
+      setIsSaving(false)
+    }
+  }
+
   return (
-    <div className="ff-details-backdrop" onClick={onClose}>
+    <div className="ff-details-backdrop" onClick={handleDrawerClose}>
       <aside
         className="ff-details-drawer"
         role="dialog"
@@ -488,18 +675,31 @@ function RequestDetailsDrawer({
               {request ? request.title : requestId ? `Request #${requestId}` : 'Request'}
             </h2>
           </div>
-          <button
-            ref={closeButtonRef}
-            type="button"
-            className="ff-icon-button"
-            aria-label="Close request details"
-            onClick={onClose}
-          >
-            x
-          </button>
+          <div className="ff-details-drawer__actions">
+            {!isLoading && !error && request && !isEditing ? (
+              <MotionButton className="ff-detail-edit-button" onClick={handleStartEdit}>
+                Edit
+              </MotionButton>
+            ) : null}
+            <button
+              ref={closeButtonRef}
+              type="button"
+              className="ff-icon-button"
+              aria-label={isEditing ? 'Cancel editing request' : 'Close request details'}
+              onClick={handleDrawerClose}
+            >
+              x
+            </button>
+          </div>
         </header>
 
         <div className="ff-details-drawer__body" id="request-details-summary">
+          {successMessage && !isEditing ? (
+            <div className="ff-form-status ff-form-status--success" role="status">
+              {successMessage}
+            </div>
+          ) : null}
+
           {isLoading ? (
             <div className="ff-detail-state" aria-live="polite">
               <p className="label">Loading</p>
@@ -517,7 +717,158 @@ function RequestDetailsDrawer({
             </div>
           ) : null}
 
-          {!isLoading && !error && request ? (
+          {!isLoading && !error && request && isEditing && editForm ? (
+            <form className="ff-detail-edit-form" onSubmit={handleSave} noValidate>
+              {saveError ? (
+                <div className="ff-form-status ff-form-status--error" role="alert">
+                  {saveError}
+                </div>
+              ) : null}
+
+              <div className="ff-form-row">
+                <label htmlFor="request-edit-title">Title</label>
+                <input
+                  ref={titleInputRef}
+                  id="request-edit-title"
+                  type="text"
+                  value={editForm.title}
+                  onChange={(event) => updateEditField('title', event.target.value)}
+                  aria-invalid={Boolean(editErrors.title)}
+                  aria-describedby={editErrors.title ? 'request-edit-title-error' : undefined}
+                  disabled={isSaving}
+                />
+                {editErrors.title ? (
+                  <p className="ff-field-error" id="request-edit-title-error">
+                    {editErrors.title}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="ff-form-row">
+                <label htmlFor="request-edit-description">Description</label>
+                <textarea
+                  id="request-edit-description"
+                  value={editForm.description}
+                  onChange={(event) => updateEditField('description', event.target.value)}
+                  aria-invalid={Boolean(editErrors.description)}
+                  aria-describedby={
+                    editErrors.description ? 'request-edit-description-error' : undefined
+                  }
+                  disabled={isSaving}
+                />
+                {editErrors.description ? (
+                  <p className="ff-field-error" id="request-edit-description-error">
+                    {editErrors.description}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="ff-form-row">
+                <label htmlFor="request-edit-location">Location</label>
+                <input
+                  id="request-edit-location"
+                  type="text"
+                  value={editForm.location}
+                  onChange={(event) => updateEditField('location', event.target.value)}
+                  aria-invalid={Boolean(editErrors.location)}
+                  aria-describedby={editErrors.location ? 'request-edit-location-error' : undefined}
+                  disabled={isSaving}
+                />
+                {editErrors.location ? (
+                  <p className="ff-field-error" id="request-edit-location-error">
+                    {editErrors.location}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="ff-detail-edit-grid">
+                <div className="ff-form-row">
+                  <label htmlFor="request-edit-priority">Priority</label>
+                  <select
+                    id="request-edit-priority"
+                    value={editForm.priority}
+                    onChange={(event) => {
+                      if (isRequestPriority(event.target.value)) {
+                        updateEditField('priority', event.target.value)
+                      }
+                    }}
+                    aria-invalid={Boolean(editErrors.priority)}
+                    aria-describedby={
+                      editErrors.priority ? 'request-edit-priority-error' : undefined
+                    }
+                    disabled={isSaving}
+                  >
+                    {editablePriorityOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {editErrors.priority ? (
+                    <p className="ff-field-error" id="request-edit-priority-error">
+                      {editErrors.priority}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="ff-form-row">
+                  <label htmlFor="request-edit-status">Status</label>
+                  <select
+                    id="request-edit-status"
+                    value={editForm.status}
+                    onChange={(event) => {
+                      if (isRequestStatus(event.target.value)) {
+                        updateEditField('status', event.target.value)
+                      }
+                    }}
+                    aria-invalid={Boolean(editErrors.status)}
+                    aria-describedby={editErrors.status ? 'request-edit-status-error' : undefined}
+                    disabled={isSaving}
+                  >
+                    {editableStatusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {editErrors.status ? (
+                    <p className="ff-field-error" id="request-edit-status-error">
+                      {editErrors.status}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="ff-detail-edit-meta" aria-label="Locked request fields">
+                <div>
+                  <span>Request ID</span>
+                  <strong>#{request.id}</strong>
+                </div>
+                {request.user_id !== undefined ? (
+                  <div>
+                    <span>Requester ID</span>
+                    <strong>{request.user_id}</strong>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="ff-modal__actions">
+                <button
+                  type="button"
+                  className="ff-secondary-button"
+                  onClick={handleCancelEdit}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+                <MotionButton variant="primary" type="submit" disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save changes'}
+                </MotionButton>
+              </div>
+            </form>
+          ) : null}
+
+          {!isLoading && !error && request && !isEditing ? (
             <div className="ff-detail-content">
               <section className="ff-detail-hero" aria-label="Request summary">
                 <span className="ff-detail-id">#{request.id}</span>
