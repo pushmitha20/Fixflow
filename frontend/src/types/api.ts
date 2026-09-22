@@ -27,11 +27,14 @@ export type RequestStatus =
 
 export type MaintenanceRequest = {
   id: number
+  user_id?: number
   title: string
   description: string
   location: string
   priority: RequestPriority
   status: RequestStatus
+  created_at?: string
+  updated_at?: string
 }
 
 export type CreateMaintenanceRequest = {

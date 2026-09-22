@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppLayout from '../../components/layout/AppLayout'
 import MotionButton from '../../components/MotionButton'
 import Reveal from '../../components/Reveal'
@@ -58,6 +58,23 @@ const priorityClassNames: Record<RequestPriority, string> = {
   LOW: 'ff-priority--low',
 }
 
+const formatOptionalDateTime = (value?: string) => {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return null
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
+}
+
 export default function Requests({ onNavigate }: RequestsProps) {
   const [requests, setRequests] = useState<MaintenanceRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -67,6 +84,12 @@ export default function Requests({ onNavigate }: RequestsProps) {
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('ALL')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null)
+  const [detailRequest, setDetailRequest] = useState<MaintenanceRequest | null>(null)
+  const [isDetailLoading, setIsDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState<string | null>(null)
+
+  const isDetailOpen = selectedRequestId !== null
 
   const loadRequests = async () => {
     setIsLoading(true)
@@ -129,6 +152,32 @@ export default function Requests({ onNavigate }: RequestsProps) {
     setPriorityFilter('ALL')
   }
 
+  const loadRequestDetails = useCallback(async (requestId: number) => {
+    setIsDetailLoading(true)
+    setDetailError(null)
+    setDetailRequest(null)
+
+    try {
+      const data = await requestService.getRequest(requestId)
+      setDetailRequest(data)
+    } catch {
+      setDetailError('Request details could not be loaded. Check the gateway connection and try again.')
+    } finally {
+      setIsDetailLoading(false)
+    }
+  }, [])
+
+  const handleSelectRequest = (requestId: number) => {
+    setSelectedRequestId(requestId)
+  }
+
+  const handleCloseDetails = useCallback(() => {
+    setSelectedRequestId(null)
+    setDetailRequest(null)
+    setDetailError(null)
+    setIsDetailLoading(false)
+  }, [])
+
   const handleRequestCreated = (createdRequest: MaintenanceRequest) => {
     setRequests((current) => [createdRequest, ...current])
     setError(null)
@@ -146,6 +195,42 @@ export default function Requests({ onNavigate }: RequestsProps) {
 
     return () => window.clearTimeout(timeoutId)
   }, [successMessage])
+
+  useEffect(() => {
+    if (selectedRequestId === null) {
+      return undefined
+    }
+
+    let isCurrent = true
+
+    const loadSelectedRequest = async () => {
+      setIsDetailLoading(true)
+      setDetailError(null)
+      setDetailRequest(null)
+
+      try {
+        const data = await requestService.getRequest(selectedRequestId)
+
+        if (isCurrent) {
+          setDetailRequest(data)
+        }
+      } catch {
+        if (isCurrent) {
+          setDetailError('Request details could not be loaded. Check the gateway connection and try again.')
+        }
+      } finally {
+        if (isCurrent) {
+          setIsDetailLoading(false)
+        }
+      }
+    }
+
+    loadSelectedRequest()
+
+    return () => {
+      isCurrent = false
+    }
+  }, [selectedRequestId])
 
   return (
     <AppLayout title="Requests" subtitle="Maintenance desk" onNavigate={onNavigate}>
@@ -261,11 +346,14 @@ export default function Requests({ onNavigate }: RequestsProps) {
                 </div>
                 <div className="ff-request-table__body">
                   {filteredRequests.map((request) => (
-                    <article
+                    <button
                       key={request.id}
-                      className="ff-request-item"
+                      type="button"
+                      className={`ff-request-item ${selectedRequestId === request.id ? 'is-selected' : ''}`}
                       role="row"
                       aria-label={`${request.title}, ${statusLabels[request.status]}, ${priorityLabels[request.priority]} priority`}
+                      aria-pressed={selectedRequestId === request.id}
+                      onClick={() => handleSelectRequest(request.id)}
                     >
                       <div className="ff-request-item__main" role="cell">
                         <strong>{request.title}</strong>
@@ -285,7 +373,7 @@ export default function Requests({ onNavigate }: RequestsProps) {
                           {statusLabels[request.status]}
                         </span>
                       </div>
-                    </article>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -298,6 +386,20 @@ export default function Requests({ onNavigate }: RequestsProps) {
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onCreated={handleRequestCreated}
+      />
+
+      <RequestDetailsDrawer
+        open={isDetailOpen}
+        request={detailRequest}
+        requestId={selectedRequestId}
+        isLoading={isDetailLoading}
+        error={detailError}
+        onClose={handleCloseDetails}
+        onRetry={() => {
+          if (selectedRequestId !== null) {
+            loadRequestDetails(selectedRequestId)
+          }
+        }}
       />
     </AppLayout>
   )
@@ -314,6 +416,159 @@ function RequestsLoading() {
           <span />
         </div>
       ))}
+    </div>
+  )
+}
+
+type RequestDetailsDrawerProps = {
+  open: boolean
+  request: MaintenanceRequest | null
+  requestId: number | null
+  isLoading: boolean
+  error: string | null
+  onClose: () => void
+  onRetry: () => void
+}
+
+function RequestDetailsDrawer({
+  open,
+  request,
+  requestId,
+  isLoading,
+  error,
+  onClose,
+  onRetry,
+}: RequestDetailsDrawerProps) {
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    if (!open) {
+      return undefined
+    }
+
+    const focusTimer = window.setTimeout(() => {
+      closeButtonRef.current?.focus()
+    }, 60)
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      window.clearTimeout(focusTimer)
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [onClose, open])
+
+  if (!open) {
+    return null
+  }
+
+  const formattedCreatedAt = formatOptionalDateTime(request?.created_at)
+  const formattedUpdatedAt = formatOptionalDateTime(request?.updated_at)
+
+  return (
+    <div className="ff-details-backdrop" onClick={onClose}>
+      <aside
+        className="ff-details-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="request-details-title"
+        aria-describedby="request-details-summary"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="ff-details-drawer__header">
+          <div>
+            <p className="label">Request details</p>
+            <h2 id="request-details-title">
+              {request ? request.title : requestId ? `Request #${requestId}` : 'Request'}
+            </h2>
+          </div>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            className="ff-icon-button"
+            aria-label="Close request details"
+            onClick={onClose}
+          >
+            x
+          </button>
+        </header>
+
+        <div className="ff-details-drawer__body" id="request-details-summary">
+          {isLoading ? (
+            <div className="ff-detail-state" aria-live="polite">
+              <p className="label">Loading</p>
+              <h3>Fetching request details</h3>
+              <p>Checking the latest request data through the gateway.</p>
+            </div>
+          ) : null}
+
+          {!isLoading && error ? (
+            <div className="ff-detail-state" role="alert">
+              <p className="label">Connection issue</p>
+              <h3>Unable to load details</h3>
+              <p>{error}</p>
+              <MotionButton onClick={onRetry}>Retry</MotionButton>
+            </div>
+          ) : null}
+
+          {!isLoading && !error && request ? (
+            <div className="ff-detail-content">
+              <section className="ff-detail-hero" aria-label="Request summary">
+                <span className="ff-detail-id">#{request.id}</span>
+                <h3>{request.title}</h3>
+                <div className="ff-detail-badges" aria-label="Status and priority">
+                  <span className={`ff-status ${statusClassNames[request.status]}`}>
+                    {statusLabels[request.status]}
+                  </span>
+                  <span className={`ff-priority ${priorityClassNames[request.priority]}`}>
+                    {priorityLabels[request.priority]}
+                  </span>
+                </div>
+              </section>
+
+              <section className="ff-detail-section" aria-label="Description">
+                <p className="label">Description</p>
+                <p>{request.description}</p>
+              </section>
+
+              <dl className="ff-detail-list">
+                <div>
+                  <dt>Location</dt>
+                  <dd>{request.location}</dd>
+                </div>
+                <div>
+                  <dt>Request ID</dt>
+                  <dd>#{request.id}</dd>
+                </div>
+                {request.user_id !== undefined ? (
+                  <div>
+                    <dt>Requester ID</dt>
+                    <dd>{request.user_id}</dd>
+                  </div>
+                ) : null}
+                {formattedCreatedAt ? (
+                  <div>
+                    <dt>Created</dt>
+                    <dd>{formattedCreatedAt}</dd>
+                  </div>
+                ) : null}
+                {formattedUpdatedAt ? (
+                  <div>
+                    <dt>Last updated</dt>
+                    <dd>{formattedUpdatedAt}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </div>
+          ) : null}
+        </div>
+      </aside>
     </div>
   )
 }
