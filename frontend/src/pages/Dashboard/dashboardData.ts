@@ -1,3 +1,5 @@
+import type { MaintenanceRequest, RequestPriority, RequestStatus } from '../../types/api'
+
 export type MetricTone = 'brand' | 'accent' | 'neutral' | 'critical'
 
 export type DashboardMetric = {
@@ -12,95 +14,98 @@ export type LifecycleStage = {
   count: number
 }
 
-export type Priority = 'HIGH' | 'CRITICAL' | 'MEDIUM' | 'LOW'
-export type RequestStatus = 'OPEN' | 'ASSIGNED' | 'IN PROGRESS' | 'COMPLETED'
-
 export type RecentRequest = {
-  id: string
+  id: number
   title: string
   location: string
-  priority: Priority
+  priority: RequestPriority
   status: RequestStatus
-  timeAgo: string
 }
 
-export const metrics: DashboardMetric[] = [
-  { label: 'Total Requests', value: '184', change: '+12 this week', tone: 'brand' },
-  { label: 'Open', value: '48', change: '9 need review', tone: 'neutral' },
-  { label: 'Critical', value: '06', change: '2 unresolved', tone: 'critical' },
-  { label: 'Completed', value: '126', change: '92% SLA', tone: 'accent' },
+export type PulsePoint = {
+  label: string
+  value: number
+}
+
+const STATUS_STAGES: Array<{ label: string; status: RequestStatus }> = [
+  { label: 'Open', status: 'OPEN' },
+  { label: 'In Progress', status: 'IN_PROGRESS' },
+  { label: 'Resolved', status: 'RESOLVED' },
+  { label: 'Closed', status: 'CLOSED' },
 ]
 
-export const lifecycleStages: LifecycleStage[] = [
-  { label: 'Open', count: 48 },
-  { label: 'Assigned', count: 21 },
-  { label: 'In Progress', count: 14 },
-  { label: 'Completed', count: 126 },
-]
+const isOpenOrInProgress = (status: RequestStatus) =>
+  status === 'OPEN' || status === 'IN_PROGRESS'
 
-export const recentRequests: RecentRequest[] = [
-  {
-    id: 'REQ-1024',
-    title: 'Projector not working',
-    location: 'Engineering Lab 03',
-    priority: 'HIGH',
-    status: 'OPEN',
-    timeAgo: '12 min ago',
-  },
-  {
-    id: 'REQ-1028',
-    title: 'Air conditioner leaking',
-    location: 'Main Building — Floor 2',
-    priority: 'CRITICAL',
-    status: 'IN PROGRESS',
-    timeAgo: '34 min ago',
-  },
-  {
-    id: 'REQ-1031',
-    title: 'Network outlet unavailable',
-    location: 'Computer Lab 05',
-    priority: 'MEDIUM',
-    status: 'ASSIGNED',
-    timeAgo: '1 hr ago',
-  },
-  {
-    id: 'REQ-1040',
-    title: 'Printer malfunction',
-    location: 'Administration Office',
-    priority: 'LOW',
-    status: 'COMPLETED',
-    timeAgo: '2 hrs ago',
-  },
-]
+export const countByStatus = (requests: MaintenanceRequest[], status: RequestStatus) =>
+  requests.filter((request) => request.status === status).length
 
-export const attentionRequests: RecentRequest[] = [
-  {
-    id: 'REQ-1018',
-    title: 'Boiler room inspection',
-    location: 'Plant Annex',
-    priority: 'CRITICAL',
-    status: 'OPEN',
-    timeAgo: '8 min ago',
-  },
-  {
-    id: 'REQ-1019',
-    title: 'Lift cabin service',
-    location: 'North Tower',
-    priority: 'HIGH',
-    status: 'IN PROGRESS',
-    timeAgo: '19 min ago',
-  },
-  {
-    id: 'REQ-1020',
-    title: 'Water pressure irregularity',
-    location: 'Warehouse 02',
-    priority: 'HIGH',
-    status: 'ASSIGNED',
-    timeAgo: '42 min ago',
-  },
-]
+export const countByPriority = (requests: MaintenanceRequest[], priority: RequestPriority) =>
+  requests.filter((request) => request.priority === priority).length
 
-export const pulseValues = [42, 44, 49, 52, 48, 58, 62, 66, 61, 74, 72, 78]
+export const buildMetrics = (requests: MaintenanceRequest[]): DashboardMetric[] => {
+  const total = requests.length
+  const open = countByStatus(requests, 'OPEN')
+  const inProgress = countByStatus(requests, 'IN_PROGRESS')
+  const resolved = countByStatus(requests, 'RESOLVED')
+  const closed = countByStatus(requests, 'CLOSED')
+  const completed = resolved + closed
+  const highPriorityOpen = requests.filter(
+    (request) => request.priority === 'HIGH' && isOpenOrInProgress(request.status),
+  ).length
+
+  return [
+    { label: 'Total Requests', value: String(total), change: `${open} open`, tone: 'brand' },
+    { label: 'Open', value: String(open), change: `${inProgress} in progress`, tone: 'neutral' },
+    {
+      label: 'High Priority',
+      value: String(highPriorityOpen),
+      change: highPriorityOpen === 1 ? 'Needs attention' : 'Need attention',
+      tone: 'critical',
+    },
+    {
+      label: 'Completed',
+      value: String(completed),
+      change: `${resolved} resolved · ${closed} closed`,
+      tone: 'accent',
+    },
+  ]
+}
+
+export const buildLifecycleStages = (requests: MaintenanceRequest[]): LifecycleStage[] =>
+  STATUS_STAGES.map((stage) => ({
+    label: stage.label,
+    count: countByStatus(requests, stage.status),
+  }))
+
+const toRecentRequest = (request: MaintenanceRequest): RecentRequest => ({
+  id: request.id,
+  title: request.title,
+  location: request.location,
+  priority: request.priority,
+  status: request.status,
+})
+
+export const buildRecentRequests = (
+  requests: MaintenanceRequest[],
+  limit = 5,
+): RecentRequest[] =>
+  [...requests]
+    .sort((a, b) => b.id - a.id)
+    .slice(0, limit)
+    .map(toRecentRequest)
+
+export const buildNeedsAttention = (requests: MaintenanceRequest[]): RecentRequest[] =>
+  requests
+    .filter((request) => request.priority === 'HIGH' && isOpenOrInProgress(request.status))
+    .sort((a, b) => b.id - a.id)
+    .map(toRecentRequest)
+
+export const buildPulsePoints = (requests: MaintenanceRequest[]): PulsePoint[] =>
+  STATUS_STAGES.map((stage) => ({
+    label: stage.label,
+    value: countByStatus(requests, stage.status),
+  }))
 
 export const loadingMessage = 'Loading operational data...'
 export const emptyMessage = 'No maintenance activity found for this view.'

@@ -19,18 +19,22 @@ export default function NeedsAttention({ requests }: NeedsAttentionProps) {
         </div>
       </div>
 
-      <ul className="ff-attention-list">
-        {requests.map((request) => (
-          <li key={request.id} className="ff-attention-item">
-            <span className="ff-attention-item__marker" aria-hidden="true" />
-            <div>
-              <strong>{request.title}</strong>
-              <span>{request.location}</span>
-            </div>
-            <span className={getPriorityClass(request.priority)}>{request.priority}</span>
-          </li>
-        ))}
-      </ul>
+      {requests.length === 0 ? (
+        <p className="ff-dashboard-empty">Nothing needs attention right now.</p>
+      ) : (
+        <ul className="ff-attention-list">
+          {requests.map((request) => (
+            <li key={request.id} className="ff-attention-item">
+              <span className="ff-attention-item__marker" aria-hidden="true" />
+              <div>
+                <strong>{request.title}</strong>
+                <span>{request.location}</span>
+              </div>
+              <span className={getPriorityClass(request.priority)}>{request.priority}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </Reveal>
   )
 }
