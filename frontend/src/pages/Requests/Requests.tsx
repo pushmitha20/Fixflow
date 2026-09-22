@@ -256,6 +256,17 @@ export default function Requests({ onNavigate }: RequestsProps) {
     setDetailSuccessMessage(`Request "${updatedRequest.title}" was updated successfully.`)
   }
 
+  const handleRequestDeleted = (requestId: number, title: string) => {
+    setRequests((current) =>
+      current.filter((request) => request.id !== requestId),
+    )
+    setSelectedRequestId(null)
+    setDetailRequest(null)
+    setDetailError(null)
+    setDetailSuccessMessage(null)
+    setSuccessMessage(`Request "${title}" was deleted successfully.`)
+  }
+
   useEffect(() => {
     if (!successMessage) {
       return undefined
@@ -470,6 +481,7 @@ export default function Requests({ onNavigate }: RequestsProps) {
         successMessage={detailSuccessMessage}
         onClose={handleCloseDetails}
         onUpdated={handleRequestUpdated}
+        onDeleted={handleRequestDeleted}
         onRetry={() => {
           if (selectedRequestId !== null) {
             loadRequestDetails(selectedRequestId)
@@ -504,6 +516,7 @@ type RequestDetailsDrawerProps = {
   successMessage: string | null
   onClose: () => void
   onUpdated: (request: MaintenanceRequest) => void
+  onDeleted: (requestId: number, title: string) => void
   onRetry: () => void
 }
 
@@ -516,16 +529,21 @@ function RequestDetailsDrawer({
   successMessage,
   onClose,
   onUpdated,
+  onDeleted,
   onRetry,
 }: RequestDetailsDrawerProps) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
   const titleInputRef = useRef<HTMLInputElement | null>(null)
   const saveLockRef = useRef(false)
+  const deleteLockRef = useRef(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const [editForm, setEditForm] = useState<RequestEditForm | null>(null)
   const [editErrors, setEditErrors] = useState<RequestEditErrors>({})
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleCancelEdit = useCallback(() => {
     if (request) {
@@ -539,14 +557,26 @@ function RequestDetailsDrawer({
     saveLockRef.current = false
   }, [request])
 
+  const handleCloseDeleteConfirmation = useCallback(() => {
+    setIsDeleteConfirmOpen(false)
+    setDeleteError(null)
+    setIsDeleting(false)
+    deleteLockRef.current = false
+  }, [])
+
   const handleDrawerClose = useCallback(() => {
+    if (isDeleteConfirmOpen) {
+      handleCloseDeleteConfirmation()
+      return
+    }
+
     if (isEditing) {
       handleCancelEdit()
       return
     }
 
     onClose()
-  }, [handleCancelEdit, isEditing, onClose])
+  }, [handleCancelEdit, handleCloseDeleteConfirmation, isDeleteConfirmOpen, isEditing, onClose])
 
   useEffect(() => {
     if (!open) {
@@ -595,10 +625,22 @@ function RequestDetailsDrawer({
       return
     }
 
+    setIsDeleteConfirmOpen(false)
+    setDeleteError(null)
     setEditForm(createEditForm(request))
     setEditErrors({})
     setSaveError(null)
     setIsEditing(true)
+  }
+
+  const handleStartDelete = () => {
+    if (!request) {
+      return
+    }
+
+    setIsDeleteConfirmOpen(true)
+    setDeleteError(null)
+    setIsEditing(false)
   }
 
   const updateEditField = <TKey extends keyof RequestEditForm>(
@@ -658,6 +700,27 @@ function RequestDetailsDrawer({
     }
   }
 
+  const handleDelete = async () => {
+    if (!request || deleteLockRef.current) {
+      return
+    }
+
+    deleteLockRef.current = true
+    setIsDeleting(true)
+    setDeleteError(null)
+
+    try {
+      await requestService.deleteRequest(request.id)
+      onDeleted(request.id, request.title)
+      handleCloseDeleteConfirmation()
+    } catch {
+      setDeleteError('Request could not be deleted. Check the gateway connection and try again.')
+    } finally {
+      deleteLockRef.current = false
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <div className="ff-details-backdrop" onClick={handleDrawerClose}>
       <aside
@@ -676,16 +739,27 @@ function RequestDetailsDrawer({
             </h2>
           </div>
           <div className="ff-details-drawer__actions">
-            {!isLoading && !error && request && !isEditing ? (
-              <MotionButton className="ff-detail-edit-button" onClick={handleStartEdit}>
-                Edit
-              </MotionButton>
+            {!isLoading && !error && request && !isEditing && !isDeleteConfirmOpen ? (
+              <>
+                <MotionButton className="ff-detail-edit-button" onClick={handleStartEdit}>
+                  Edit
+                </MotionButton>
+                <button
+                  type="button"
+                  className="ff-detail-delete-button"
+                  aria-label={`Delete request ${request.title}`}
+                  onClick={handleStartDelete}
+                  disabled={isDeleting}
+                >
+                  Delete
+                </button>
+              </>
             ) : null}
             <button
               ref={closeButtonRef}
               type="button"
               className="ff-icon-button"
-              aria-label={isEditing ? 'Cancel editing request' : 'Close request details'}
+              aria-label={isEditing || isDeleteConfirmOpen ? 'Cancel editing request' : 'Close request details'}
               onClick={handleDrawerClose}
             >
               x
@@ -694,7 +768,7 @@ function RequestDetailsDrawer({
         </header>
 
         <div className="ff-details-drawer__body" id="request-details-summary">
-          {successMessage && !isEditing ? (
+          {successMessage && !isEditing && !isDeleteConfirmOpen ? (
             <div className="ff-form-status ff-form-status--success" role="status">
               {successMessage}
             </div>
@@ -714,6 +788,40 @@ function RequestDetailsDrawer({
               <h3>Unable to load details</h3>
               <p>{error}</p>
               <MotionButton onClick={onRetry}>Retry</MotionButton>
+            </div>
+          ) : null}
+
+          {!isLoading && !error && request && isDeleteConfirmOpen ? (
+            <div className="ff-detail-delete-confirmation" role="alertdialog" aria-labelledby="request-delete-title" aria-describedby="request-delete-description">
+              <p className="label">Delete request</p>
+              <h3 id="request-delete-title">Delete "{request.title}"?</h3>
+              <p id="request-delete-description">This action cannot be undone.</p>
+
+              {deleteError ? (
+                <div className="ff-form-status ff-form-status--error" role="alert">
+                  {deleteError}
+                </div>
+              ) : null}
+
+              <div className="ff-modal__actions">
+                <button
+                  type="button"
+                  className="ff-secondary-button"
+                  onClick={handleCloseDeleteConfirmation}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="ff-danger-button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  aria-label={`Delete request ${request.title}`}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Request'}
+                </button>
+              </div>
             </div>
           ) : null}
 
