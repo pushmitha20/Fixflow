@@ -56,3 +56,20 @@ export type UpdateMaintenanceRequest = {
 export type DeleteMaintenanceRequestResponse = {
   message: string
 }
+
+export type Assignment = {
+  id: number
+  maintenanceRequestId: number
+  technicianId: number
+  status: string
+  assignedAt: string
+}
+
+export type UserRole = 'STUDENT' | 'TECHNICIAN' | 'ADMIN'
+
+export type User = {
+  id: number
+  name: string
+  email: string
+  role: UserRole
+}
