@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import httpx
 
 app = FastAPI(title="FixFlow API Gateway")
+
+USER_SERVICE_URL = "http://localhost:8002"
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,18 +23,48 @@ def health_check():
     return {"status": "healthy"}
 
 
+def proxy_user_service(method, path, **kwargs):
+    # Pass the User Service's status and body through so 404/409/422 reach the client
+    # unchanged; only a failure to reach the service is reported by the gateway itself.
+    try:
+        response = getattr(httpx, method)(f"{USER_SERVICE_URL}{path}", **kwargs)
+    except httpx.RequestError:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "User service unavailable"}
+        )
+
+    try:
+        content = response.json()
+    except ValueError:
+        content = {"detail": response.text or "User service error"}
+
+    return JSONResponse(status_code=response.status_code, content=content)
+
+
 @app.get("/users")
 def get_users():
-    response = httpx.get("http://localhost:8002/users")
-    response.raise_for_status()
-    return response.json()
+    return proxy_user_service("get", "/users")
 
 
 @app.get("/users/{user_id}")
 def get_user(user_id: int):
-    response = httpx.get(f"http://localhost:8002/users/{user_id}")
-    response.raise_for_status()
-    return response.json()
+    return proxy_user_service("get", f"/users/{user_id}")
+
+
+@app.post("/users")
+def create_user(request: dict):
+    return proxy_user_service("post", "/users", json=request)
+
+
+@app.put("/users/{user_id}")
+def update_user(user_id: int, request: dict):
+    return proxy_user_service("put", f"/users/{user_id}", json=request)
+
+
+@app.delete("/users/{user_id}")
+def delete_user(user_id: int):
+    return proxy_user_service("delete", f"/users/{user_id}")
 
 
 @app.get("/assignments")
