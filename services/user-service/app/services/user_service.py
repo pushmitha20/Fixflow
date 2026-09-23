@@ -45,11 +45,26 @@ def update_user(db: Session, user_id: int, user_data: UserUpdate):
     if user is None:
         return None
 
+    email_owner = db.query(User).filter(
+        User.email == user_data.email,
+        User.id != user_id
+    ).first()
+    if email_owner is not None:
+        raise exc.IntegrityError(
+            statement=None,
+            params=None,
+            orig=Exception("User with this email already exists")
+        )
+
     user.name = user_data.name
     user.email = user_data.email
     user.role = user_data.role
 
-    db.commit()
+    try:
+        db.commit()
+    except exc.IntegrityError as exc_error:
+        db.rollback()
+        raise exc_error
     db.refresh(user)
 
     return user

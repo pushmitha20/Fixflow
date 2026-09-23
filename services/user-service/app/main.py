@@ -51,7 +51,12 @@ def update_user(
     user_data: UserUpdate,
     db: Session = Depends(get_db)
 ):
-    user = user_service.update_user(db, user_id, user_data)
+    try:
+        user = user_service.update_user(db, user_id, user_data)
+    except exc.IntegrityError as exc_error:
+        if "already exists" in str(exc_error.orig):
+            raise HTTPException(status_code=409, detail="User with this email already exists") from exc_error
+        raise HTTPException(status_code=400, detail="Unable to update user") from exc_error
 
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
