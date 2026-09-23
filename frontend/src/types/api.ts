@@ -74,6 +74,18 @@ export type User = {
   role: UserRole
 }
 
+export type CreateUser = {
+  name: string
+  email: string
+  role: UserRole
+}
+
+export type UpdateUser = CreateUser
+
+export type DeleteUserResponse = {
+  message: string
+}
+
 export type SystemNotification = {
   id: number
   user_id: number
