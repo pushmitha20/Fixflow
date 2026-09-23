@@ -1,3 +1,4 @@
+import httpx
 from fastapi.testclient import TestClient
 from unittest.mock import patch
 
@@ -79,6 +80,165 @@ def test_get_user_by_id_route_exists(mock_get):
         "email": "alice@example.com",
         "role": "STUDENT",
     }
+
+
+USER = {"id": 1, "name": "Alice", "email": "alice@example.com", "role": "STUDENT"}
+USER_PAYLOAD = {"name": "Alice", "email": "alice@example.com", "role": "STUDENT"}
+DUPLICATE_EMAIL = {"detail": "User with this email already exists"}
+NOT_FOUND = {"detail": "User not found"}
+VALIDATION_ERROR = {
+    "detail": [
+        {
+            "type": "value_error",
+            "loc": ["body", "email"],
+            "msg": "value is not a valid email address",
+            "input": "not-an-email",
+        }
+    ]
+}
+
+
+def mock_user_service(mock, status_code, body):
+    mock.return_value.status_code = status_code
+    mock.return_value.json.return_value = body
+
+
+@patch("app.main.httpx.get")
+def test_get_user_by_id_missing_returns_404(mock_get):
+    mock_user_service(mock_get, 404, NOT_FOUND)
+
+    response = client.get("/users/999")
+
+    assert response.status_code == 404
+    assert response.json() == NOT_FOUND
+    mock_get.assert_called_once_with("http://localhost:8002/users/999")
+
+
+@patch("app.main.httpx.get")
+def test_get_users_user_service_unreachable_returns_503(mock_get):
+    mock_get.side_effect = httpx.ConnectError(
+        "Connection refused",
+        request=httpx.Request("GET", "http://localhost:8002/users"),
+    )
+
+    response = client.get("/users")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "User service unavailable"}
+
+
+@patch("app.main.httpx.post")
+def test_create_user_route(mock_post):
+    mock_user_service(mock_post, 200, USER)
+
+    response = client.post("/users", json=USER_PAYLOAD)
+
+    assert response.status_code == 200
+    assert response.json() == USER
+    mock_post.assert_called_once_with("http://localhost:8002/users", json=USER_PAYLOAD)
+
+
+@patch("app.main.httpx.post")
+def test_create_user_duplicate_email_returns_409(mock_post):
+    mock_user_service(mock_post, 409, DUPLICATE_EMAIL)
+
+    response = client.post("/users", json=USER_PAYLOAD)
+
+    assert response.status_code == 409
+    assert response.json() == DUPLICATE_EMAIL
+
+
+@patch("app.main.httpx.post")
+def test_create_user_invalid_payload_returns_422(mock_post):
+    mock_user_service(mock_post, 422, VALIDATION_ERROR)
+
+    response = client.post("/users", json={**USER_PAYLOAD, "email": "not-an-email"})
+
+    assert response.status_code == 422
+    assert response.json() == VALIDATION_ERROR
+
+
+@patch("app.main.httpx.put")
+def test_update_user_route(mock_put):
+    updated = {**USER, "name": "Alice Updated"}
+    mock_user_service(mock_put, 200, updated)
+
+    response = client.put("/users/1", json={**USER_PAYLOAD, "name": "Alice Updated"})
+
+    assert response.status_code == 200
+    assert response.json() == updated
+    mock_put.assert_called_once_with(
+        "http://localhost:8002/users/1",
+        json={**USER_PAYLOAD, "name": "Alice Updated"},
+    )
+
+
+@patch("app.main.httpx.put")
+def test_update_user_missing_returns_404(mock_put):
+    mock_user_service(mock_put, 404, NOT_FOUND)
+
+    response = client.put("/users/999", json=USER_PAYLOAD)
+
+    assert response.status_code == 404
+    assert response.json() == NOT_FOUND
+
+
+@patch("app.main.httpx.put")
+def test_update_user_duplicate_email_returns_409(mock_put):
+    mock_user_service(mock_put, 409, DUPLICATE_EMAIL)
+
+    response = client.put("/users/1", json=USER_PAYLOAD)
+
+    assert response.status_code == 409
+    assert response.json() == DUPLICATE_EMAIL
+
+
+@patch("app.main.httpx.put")
+def test_update_user_invalid_payload_returns_422(mock_put):
+    mock_user_service(mock_put, 422, VALIDATION_ERROR)
+
+    response = client.put("/users/1", json={**USER_PAYLOAD, "email": "not-an-email"})
+
+    assert response.status_code == 422
+    assert response.json() == VALIDATION_ERROR
+
+
+@patch("app.main.httpx.delete")
+def test_delete_user_route(mock_delete):
+    mock_user_service(mock_delete, 200, {"message": "User deleted successfully"})
+
+    response = client.delete("/users/1")
+
+    assert response.status_code == 200
+    assert response.json() == {"message": "User deleted successfully"}
+    mock_delete.assert_called_once_with("http://localhost:8002/users/1")
+
+
+@patch("app.main.httpx.delete")
+def test_delete_user_missing_returns_404(mock_delete):
+    mock_user_service(mock_delete, 404, NOT_FOUND)
+
+    response = client.delete("/users/999")
+
+    assert response.status_code == 404
+    assert response.json() == NOT_FOUND
+
+
+def test_users_cors_preflight_allows_mutation_methods():
+    for method in ["POST", "PUT", "DELETE"]:
+        path = "/users" if method == "POST" else "/users/1"
+        response = client.options(
+            path,
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": method,
+                "Access-Control-Request-Headers": "Content-Type",
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+        assert method in response.headers["access-control-allow-methods"]
 
 
 @patch("app.main.httpx.post")
