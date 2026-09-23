@@ -281,6 +281,54 @@ def test_update_user_not_found_returns_404():
     assert response.json() == {"detail": "User not found"}
 
 
+def test_update_user_duplicate_email_returns_409():
+    user_a = client.post(
+        "/users",
+        json={
+            "name": "Grace Hall",
+            "email": "grace@example.com",
+            "role": "STUDENT",
+        },
+    ).json()
+    user_b = client.post(
+        "/users",
+        json={
+            "name": "Henry Park",
+            "email": "henry@example.com",
+            "role": "TECHNICIAN",
+        },
+    ).json()
+
+    duplicate = client.put(
+        f"/users/{user_a['id']}",
+        json={
+            "name": "Grace Renamed",
+            "email": "henry@example.com",
+            "role": "ADMIN",
+        },
+    )
+
+    assert duplicate.status_code == 409
+    assert duplicate.json() == {"detail": "User with this email already exists"}
+
+    assert client.get(f"/users/{user_a['id']}").json() == user_a
+    assert client.get(f"/users/{user_b['id']}").json() == user_b
+
+    follow_up = client.put(
+        f"/users/{user_a['id']}",
+        json={
+            "name": "Grace Renamed",
+            "email": "grace@example.com",
+            "role": "ADMIN",
+        },
+    )
+
+    assert follow_up.status_code == 200
+    assert follow_up.json()["name"] == "Grace Renamed"
+    assert follow_up.json()["email"] == "grace@example.com"
+    assert len(client.get("/users").json()) == 2
+
+
 def test_update_user_invalid_email_returns_422():
     create_response = client.post(
         "/users",
