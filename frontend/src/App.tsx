@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import Analytics from './pages/Analytics/Analytics'
 import Assignments from './pages/Assignments/Assignments'
 import Dashboard from './pages/Dashboard/Dashboard'
 import Notifications from './pages/Notifications/Notifications'
 import Requests from './pages/Requests/Requests'
 
-type AppPage = 'Dashboard' | 'Requests' | 'Assignments' | 'Notifications'
+type AppPage = 'Dashboard' | 'Requests' | 'Assignments' | 'Notifications' | 'Analytics'
 
 const getInitialPage = (): AppPage => {
   const page = new URLSearchParams(window.location.search).get('page')?.toLowerCase()
@@ -21,6 +22,10 @@ const getInitialPage = (): AppPage => {
     return 'Notifications'
   }
 
+  if (page === 'analytics') {
+    return 'Analytics'
+  }
+
   return 'Dashboard'
 }
 
@@ -32,7 +37,8 @@ function App() {
       item === 'Dashboard' ||
       item === 'Requests' ||
       item === 'Assignments' ||
-      item === 'Notifications'
+      item === 'Notifications' ||
+      item === 'Analytics'
     ) {
       setActivePage(item)
     }
@@ -48,6 +54,10 @@ function App() {
 
   if (activePage === 'Notifications') {
     return <Notifications onNavigate={handleNavigate} />
+  }
+
+  if (activePage === 'Analytics') {
+    return <Analytics onNavigate={handleNavigate} />
   }
 
   return <Dashboard onNavigate={handleNavigate} />
