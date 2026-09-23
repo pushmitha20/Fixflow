@@ -73,3 +73,12 @@ export type User = {
   email: string
   role: UserRole
 }
+
+export type SystemNotification = {
+  id: number
+  user_id: number
+  message: string
+  type: string
+  is_read: boolean
+  created_at: string
+}
