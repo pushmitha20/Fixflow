@@ -1388,6 +1388,164 @@ h2 {
   min-height: 180px;
 }
 
+.ff-user-table__header,
+.ff-user-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 168px;
+  gap: 16px;
+  align-items: center;
+  padding: 0 18px;
+}
+
+.ff-user-row__columns {
+  display: grid;
+  grid-template-columns: 64px minmax(140px, 1fr) minmax(180px, 1.4fr) 110px;
+  gap: 16px;
+  align-items: center;
+  min-width: 0;
+}
+
+.ff-user-table__header {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ff-border);
+  color: var(--ff-muted);
+  font-size: 0.72rem;
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ff-user-table__actions-head {
+  text-align: right;
+}
+
+.ff-user-table__body {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ff-user-row {
+  border-bottom: 1px solid var(--ff-border);
+}
+
+.ff-user-row:last-child {
+  border-bottom: none;
+}
+
+.ff-user-row:hover {
+  background: rgba(221, 234, 228, 0.18);
+}
+
+.ff-user-row.is-selected {
+  background: rgba(221, 234, 228, 0.28);
+  box-shadow: inset 4px 0 0 var(--ff-brand);
+}
+
+.ff-user-row__main {
+  width: 100%;
+  padding: 14px 0;
+  border: none;
+  background: transparent;
+  color: var(--ff-ink);
+  font: inherit;
+  text-align: left;
+}
+
+.ff-user-row__id {
+  color: var(--ff-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ff-user-row__name {
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.ff-user-row__email {
+  min-width: 0;
+  color: var(--ff-muted);
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.ff-user-row__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ff-user-row__actions .ff-secondary-button,
+.ff-user-row__actions .ff-danger-button {
+  min-height: 36px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.ff-role-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 999px;
+  color: var(--ff-ink);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ff-user-detail__email {
+  overflow-wrap: anywhere;
+}
+
+/* User dialogs can open from the details drawer, so they must stack above it. */
+.ff-modal-backdrop--over-drawer {
+  z-index: 40;
+}
+
+.ff-modal--compact {
+  width: min(100%, 480px);
+  padding: 22px;
+}
+
+.ff-modal--compact .ff-detail-delete-confirmation {
+  padding: 0;
+}
+
+.ff-modal--compact h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.ff-user-skeleton {
+  display: grid;
+  grid-template-columns: 64px minmax(140px, 1fr) minmax(180px, 1.4fr) 110px;
+  gap: 16px;
+  padding: 17px 18px;
+  border-bottom: 1px solid var(--ff-border);
+}
+
+.ff-user-skeleton:last-child {
+  border-bottom: none;
+}
+
+.ff-user-skeleton span {
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(221, 218, 209, 0.42), rgba(255, 253, 248, 0.8), rgba(221, 218, 209, 0.42));
+  background-size: 180% 100%;
+  animation: ff-skeleton 1.4s ease-in-out infinite;
+}
+
 .ff-dashboard-empty {
   color: var(--ff-muted);
   font-size: 0.92rem;
@@ -2220,6 +2378,49 @@ h2 {
     padding: 9px 6px;
   }
 
+  .ff-user-table__header {
+    display: none;
+  }
+
+  .ff-user-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding-bottom: 14px;
+  }
+
+  .ff-user-row__columns {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 12px;
+  }
+
+  .ff-user-row__main {
+    padding-bottom: 6px;
+  }
+
+  .ff-user-row__name {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .ff-user-row__id {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .ff-user-row__email {
+    grid-column: 1 / -1;
+  }
+
+  .ff-user-row__actions {
+    justify-content: flex-start;
+  }
+
+  .ff-user-skeleton {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
   .ff-details-backdrop {
     justify-content: stretch;
   }
@@ -2354,7 +2555,8 @@ h2 {
   .ff-assignment-skeleton span,
   .ff-notification-skeleton span,
   .ff-analytics-loading__strip span,
-  .ff-analytics-loading__panel span {
+  .ff-analytics-loading__panel span,
+  .ff-user-skeleton span {
     transition: none !important;
     transform: none !important;
     animation: none !important;
