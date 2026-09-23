@@ -82,3 +82,9 @@ export type SystemNotification = {
   is_read: boolean
   created_at: string
 }
+
+export type AnalyticsSummary = {
+  total_requests: number
+  total_assignments: number
+  requests_by_priority: Record<string, number>
+}
