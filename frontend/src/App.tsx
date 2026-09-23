@@ -4,8 +4,9 @@ import Assignments from './pages/Assignments/Assignments'
 import Dashboard from './pages/Dashboard/Dashboard'
 import Notifications from './pages/Notifications/Notifications'
 import Requests from './pages/Requests/Requests'
+import Users from './pages/Users/Users'
 
-type AppPage = 'Dashboard' | 'Requests' | 'Assignments' | 'Notifications' | 'Analytics'
+type AppPage = 'Dashboard' | 'Requests' | 'Assignments' | 'Notifications' | 'Analytics' | 'Users'
 
 const getInitialPage = (): AppPage => {
   const page = new URLSearchParams(window.location.search).get('page')?.toLowerCase()
@@ -26,6 +27,10 @@ const getInitialPage = (): AppPage => {
     return 'Analytics'
   }
 
+  if (page === 'users') {
+    return 'Users'
+  }
+
   return 'Dashboard'
 }
 
@@ -38,7 +43,8 @@ function App() {
       item === 'Requests' ||
       item === 'Assignments' ||
       item === 'Notifications' ||
-      item === 'Analytics'
+      item === 'Analytics' ||
+      item === 'Users'
     ) {
       setActivePage(item)
     }
@@ -58,6 +64,10 @@ function App() {
 
   if (activePage === 'Analytics') {
     return <Analytics onNavigate={handleNavigate} />
+  }
+
+  if (activePage === 'Users') {
+    return <Users onNavigate={handleNavigate} />
   }
 
   return <Dashboard onNavigate={handleNavigate} />
