@@ -2,7 +2,7 @@ import httpx
 from fastapi.testclient import TestClient
 from unittest.mock import patch
 
-from app.main import app
+from app.main import DOWNSTREAM_TIMEOUT_SECONDS, app
 
 
 client = TestClient(app)
@@ -111,7 +111,10 @@ def test_get_user_by_id_missing_returns_404(mock_get):
 
     assert response.status_code == 404
     assert response.json() == NOT_FOUND
-    mock_get.assert_called_once_with("http://localhost:8002/users/999")
+    mock_get.assert_called_once_with(
+        "http://localhost:8002/users/999",
+        timeout=DOWNSTREAM_TIMEOUT_SECONDS,
+    )
 
 
 @patch("app.main.httpx.get")
@@ -135,7 +138,11 @@ def test_create_user_route(mock_post):
 
     assert response.status_code == 200
     assert response.json() == USER
-    mock_post.assert_called_once_with("http://localhost:8002/users", json=USER_PAYLOAD)
+    mock_post.assert_called_once_with(
+        "http://localhost:8002/users",
+        json=USER_PAYLOAD,
+        timeout=DOWNSTREAM_TIMEOUT_SECONDS,
+    )
 
 
 @patch("app.main.httpx.post")
@@ -170,6 +177,7 @@ def test_update_user_route(mock_put):
     mock_put.assert_called_once_with(
         "http://localhost:8002/users/1",
         json={**USER_PAYLOAD, "name": "Alice Updated"},
+        timeout=DOWNSTREAM_TIMEOUT_SECONDS
     )
 
 
@@ -211,7 +219,10 @@ def test_delete_user_route(mock_delete):
 
     assert response.status_code == 200
     assert response.json() == {"message": "User deleted successfully"}
-    mock_delete.assert_called_once_with("http://localhost:8002/users/1")
+    mock_delete.assert_called_once_with(
+        "http://localhost:8002/users/1",
+        timeout=DOWNSTREAM_TIMEOUT_SECONDS,
+    )
 
 
 @patch("app.main.httpx.delete")
@@ -283,7 +294,8 @@ def test_create_request_route(mock_post):
             "description": "Projector is not working",
             "location": "Lab 03",
             "priority": "HIGH"
-        }
+        },
+        timeout=DOWNSTREAM_TIMEOUT_SECONDS
     )
 
 
@@ -313,7 +325,8 @@ def test_get_request_by_id_route(mock_get):
     }
 
     mock_get.assert_called_once_with(
-        "http://localhost:8001/requests/28"
+        "http://localhost:8001/requests/28",
+        timeout=DOWNSTREAM_TIMEOUT_SECONDS
     )
 
 
@@ -347,7 +360,8 @@ def test_get_requests_route(mock_get):
     ]
 
     mock_get.assert_called_once_with(
-        "http://localhost:8001/requests"
+        "http://localhost:8001/requests",
+        timeout=DOWNSTREAM_TIMEOUT_SECONDS
     )
 
 
@@ -393,7 +407,8 @@ def test_update_request_route(mock_put):
             "location": "Lab 04",
             "priority": "MEDIUM",
             "status": "IN_PROGRESS"
-        }
+        },
+        timeout=DOWNSTREAM_TIMEOUT_SECONDS
     )
 
 

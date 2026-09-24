@@ -5,7 +5,14 @@ import httpx
 
 app = FastAPI(title="FixFlow API Gateway")
 
+MAINTENANCE_SERVICE_URL = "http://localhost:8001"
 USER_SERVICE_URL = "http://localhost:8002"
+NOTIFICATION_SERVICE_URL = "http://localhost:8003"
+ANALYTICS_SERVICE_URL = "http://localhost:8004"
+ASSIGNMENT_SERVICE_URL = "http://localhost:5251"
+
+# Matches httpx's implicit default, made explicit so every downstream call shares one limit.
+DOWNSTREAM_TIMEOUT_SECONDS = 5.0
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,23 +30,48 @@ def health_check():
     return {"status": "healthy"}
 
 
-def proxy_user_service(method, path, **kwargs):
-    # Pass the User Service's status and body through so 404/409/422 reach the client
-    # unchanged; only a failure to reach the service is reported by the gateway itself.
+def proxy(service_name, base_url, method, path, **kwargs):
+    # Pass the downstream status and body through so 404/409/422 reach the client
+    # unchanged; only a failure to reach the service (including a timeout) is
+    # reported by the gateway itself.
     try:
-        response = getattr(httpx, method)(f"{USER_SERVICE_URL}{path}", **kwargs)
+        response = getattr(httpx, method)(
+            f"{base_url}{path}",
+            timeout=DOWNSTREAM_TIMEOUT_SECONDS,
+            **kwargs
+        )
     except httpx.RequestError:
         return JSONResponse(
             status_code=503,
-            content={"detail": "User service unavailable"}
+            content={"detail": f"{service_name} service unavailable"}
         )
 
     try:
         content = response.json()
     except ValueError:
-        content = {"detail": response.text or "User service error"}
+        content = {"detail": response.text or f"{service_name} service error"}
 
     return JSONResponse(status_code=response.status_code, content=content)
+
+
+def proxy_user_service(method, path, **kwargs):
+    return proxy("User", USER_SERVICE_URL, method, path, **kwargs)
+
+
+def proxy_maintenance_service(method, path, **kwargs):
+    return proxy("Maintenance", MAINTENANCE_SERVICE_URL, method, path, **kwargs)
+
+
+def proxy_assignment_service(method, path, **kwargs):
+    return proxy("Assignment", ASSIGNMENT_SERVICE_URL, method, path, **kwargs)
+
+
+def proxy_notification_service(method, path, **kwargs):
+    return proxy("Notification", NOTIFICATION_SERVICE_URL, method, path, **kwargs)
+
+
+def proxy_analytics_service(method, path, **kwargs):
+    return proxy("Analytics", ANALYTICS_SERVICE_URL, method, path, **kwargs)
 
 
 @app.get("/users")
@@ -69,81 +101,49 @@ def delete_user(user_id: int):
 
 @app.get("/assignments")
 def get_assignments():
-    response = httpx.get("http://localhost:5251/assignments")
-    response.raise_for_status()
-    return response.json()
+    return proxy_assignment_service("get", "/assignments")
 
 
 @app.post("/assignments")
 def create_assignment(request: dict):
-    response = httpx.post(
-        "http://localhost:5251/assignments",
-        json=request
-    )
-    response.raise_for_status()
-    return response.json()
+    return proxy_assignment_service("post", "/assignments", json=request)
 
 
 @app.get("/notifications")
 def get_notifications():
-    response = httpx.get("http://localhost:8003/notifications")
-    response.raise_for_status()
-    return response.json()
+    return proxy_notification_service("get", "/notifications")
 
 
 @app.post("/notifications")
 def create_notification(request: dict):
-    response = httpx.post(
-        "http://localhost:8003/notifications",
-        json=request
-    )
-    response.raise_for_status()
-    return response.json()
+    return proxy_notification_service("post", "/notifications", json=request)
 
 
 @app.get("/analytics/summary")
 def get_analytics_summary():
-    response = httpx.get("http://localhost:8004/analytics/summary")
-    response.raise_for_status()
-    return response.json()
+    return proxy_analytics_service("get", "/analytics/summary")
 
 
 @app.post("/requests")
 def create_request(request: dict):
-    response = httpx.post(
-        "http://localhost:8001/requests",
-        json=request
-    )
-    response.raise_for_status()
-    return response.json()
+    return proxy_maintenance_service("post", "/requests", json=request)
 
 
 @app.get("/requests")
 def get_requests():
-    response = httpx.get("http://localhost:8001/requests")
-    response.raise_for_status()
-    return response.json()
+    return proxy_maintenance_service("get", "/requests")
 
 
 @app.get("/requests/{request_id}")
 def get_request(request_id: int):
-    response = httpx.get(f"http://localhost:8001/requests/{request_id}")
-    response.raise_for_status()
-    return response.json()
+    return proxy_maintenance_service("get", f"/requests/{request_id}")
 
 
 @app.put("/requests/{request_id}")
 def update_request(request_id: int, request: dict):
-    response = httpx.put(
-        f"http://localhost:8001/requests/{request_id}",
-        json=request
-    )
-    response.raise_for_status()
-    return response.json()
+    return proxy_maintenance_service("put", f"/requests/{request_id}", json=request)
 
 
 @app.delete("/requests/{request_id}")
 def delete_request(request_id: int):
-    response = httpx.delete(f"http://localhost:8001/requests/{request_id}")
-    response.raise_for_status()
-    return response.json()
+    return proxy_maintenance_service("delete", f"/requests/{request_id}")
