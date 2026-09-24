@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 from confluent_kafka import Consumer
 
@@ -10,7 +11,7 @@ from app.models import AnalyticsEvent
 logger = logging.getLogger(__name__)
 
 consumer = Consumer({
-    "bootstrap.servers": "localhost:9092",
+    "bootstrap.servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
     "group.id": "fixflow-analytics-service",
     "auto.offset.reset": "latest"
 })
