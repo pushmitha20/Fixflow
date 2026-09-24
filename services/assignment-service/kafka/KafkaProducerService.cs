@@ -18,6 +18,8 @@ public class KafkaProducerService
         {
             BootstrapServers = bootstrapServers
         };
+
+        KafkaSecurityConfig.Apply(_config);
     }
 
     public virtual void PublishAssignmentCreated(

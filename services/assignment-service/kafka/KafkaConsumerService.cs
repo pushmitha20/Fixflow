@@ -35,6 +35,8 @@ public class KafkaConsumerService : BackgroundService
             AutoOffsetReset = AutoOffsetReset.Latest
         };
 
+        KafkaSecurityConfig.Apply(config);
+
         using var consumer = new ConsumerBuilder<Ignore, string>(config)
             .Build();
 
