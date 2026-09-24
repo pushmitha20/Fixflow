@@ -192,7 +192,7 @@ export default function Requests({ onNavigate }: RequestsProps) {
         priorityFilter === 'ALL' || request.priority === priorityFilter
 
       return matchesSearch && matchesStatus && matchesPriority
-    })
+    }).sort((a, b) => b.id - a.id)
   }, [priorityFilter, requests, searchTerm, statusFilter])
 
   const hasActiveFilters =

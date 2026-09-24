@@ -105,7 +105,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
             <section className="ff-dashboard__split" aria-label="Recent operational activity">
               <RecentRequests requests={recentRequests} />
-              <NeedsAttention requests={attentionRequests} />
+              <NeedsAttention requests={attentionRequests} onViewAll={() => onNavigate?.('Requests')} />
             </section>
 
             <OperationsPulse points={pulsePoints} />
