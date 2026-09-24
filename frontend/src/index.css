@@ -89,7 +89,7 @@ a {
 }
 
 :focus-visible {
-  outline: 3px solid rgba(23, 107, 99, 0.22);
+  outline: 3px solid var(--ff-brand);
   outline-offset: 2px;
 }
 
@@ -234,8 +234,7 @@ h2 {
   border-top: 1px solid var(--ff-border);
 }
 
-.ff-nav__avatar,
-.ff-topbar__avatar {
+.ff-nav__avatar {
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -309,9 +308,7 @@ h2 {
   gap: 12px;
 }
 
-.ff-topbar__search,
-.ff-topbar__action,
-.ff-topbar__profile {
+.ff-topbar__action {
   border: 1px solid var(--ff-border);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.75);
@@ -319,49 +316,15 @@ h2 {
   transition: border-color 160ms ease, transform 160ms ease;
 }
 
-.ff-topbar__search {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0.7rem 0.9rem;
-}
-
-.ff-topbar__action,
-.ff-topbar__profile {
-  position: relative;
+.ff-topbar__action {
+  width: 42px;
+  height: 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.ff-topbar__action {
-  width: 42px;
-  height: 42px;
-}
-
-.ff-topbar__profile {
-  gap: 10px;
-  padding: 0.45rem 0.75rem 0.45rem 0.45rem;
-}
-
-.ff-topbar__user {
-  font-size: 0.83rem;
-  font-weight: 600;
-}
-
-.ff-topbar__badge {
-  position: absolute;
-  top: 9px;
-  right: 9px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ff-critical);
-}
-
-.ff-topbar__search:hover,
 .ff-topbar__action:hover,
-.ff-topbar__profile:hover,
 .ff-topbar__menu:hover {
   transform: translateY(-1px);
   border-color: rgba(23, 107, 99, 0.18);
@@ -2038,6 +2001,10 @@ h2 {
 }
 
 .ff-request-list,
+.ff-attention-more {
+  margin-top: 12px;
+}
+
 .ff-attention-list {
   list-style: none;
   margin: 0;
@@ -2244,11 +2211,6 @@ h2 {
 
   .ff-topbar {
     padding: 16px 18px;
-  }
-
-  .ff-topbar__search span:last-child,
-  .ff-topbar__user {
-    display: none;
   }
 
   .ff-dashboard__intro {
@@ -2464,11 +2426,6 @@ h2 {
     overflow-x: hidden;
   }
 
-  .ff-topbar__search,
-  .ff-topbar__profile {
-    display: none;
-  }
-
   .ff-requests,
   .ff-dashboard {
     max-width: 100%;
@@ -2542,10 +2499,7 @@ h2 {
   .ff-request-row,
   .ff-request-row__arrow,
   .ff-motion-button,
-  .ff-nav,
-  .ff-topbar__search,
   .ff-topbar__action,
-  .ff-topbar__profile,
   .ff-topbar__menu,
   .ff-nav__item,
   .ff-request-item,
