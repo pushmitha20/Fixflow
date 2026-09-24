@@ -58,10 +58,10 @@ export default function Navigation({
       </nav>
 
       <div className="ff-nav__profile" aria-label="Current user profile">
-        <div className="ff-nav__avatar">AM</div>
+        <div className="ff-nav__avatar" aria-hidden="true">FL</div>
         <div>
-          <strong>Alex Morgan</strong>
-          <span>Ops Lead</span>
+          <strong>FixFlow Local Dev User</strong>
+          <span>Local demo user</span>
         </div>
       </div>
     </aside>

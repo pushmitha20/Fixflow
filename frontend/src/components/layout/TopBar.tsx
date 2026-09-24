@@ -3,6 +3,7 @@ type TopBarProps = {
   subtitle: string
   mobileNavOpen: boolean
   onToggleMobileNav: () => void
+  onOpenNotifications: () => void
 }
 
 export default function TopBar({
@@ -10,6 +11,7 @@ export default function TopBar({
   subtitle,
   mobileNavOpen,
   onToggleMobileNav,
+  onOpenNotifications,
 }: TopBarProps) {
   return (
     <header className="ff-topbar">
@@ -33,23 +35,13 @@ export default function TopBar({
       </div>
 
       <div className="ff-topbar__actions">
-        <button type="button" className="ff-topbar__search" aria-label="Search records">
-          <span aria-hidden="true">⌕</span>
-          <span>Search</span>
-        </button>
-
         <button
           type="button"
           className="ff-topbar__action"
-          aria-label="Notifications"
+          aria-label="View notifications"
+          onClick={onOpenNotifications}
         >
           <span aria-hidden="true">◔</span>
-          <span className="ff-topbar__badge" aria-hidden="true" />
-        </button>
-
-        <button type="button" className="ff-topbar__profile" aria-label="Open profile menu">
-          <span className="ff-topbar__avatar">AM</span>
-          <span className="ff-topbar__user">Alex Morgan</span>
         </button>
       </div>
     </header>

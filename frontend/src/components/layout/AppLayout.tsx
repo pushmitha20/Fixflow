@@ -36,6 +36,7 @@ export default function AppLayout({
           subtitle={subtitle}
           mobileNavOpen={mobileNavOpen}
           onToggleMobileNav={() => setMobileNavOpen((current) => !current)}
+          onOpenNotifications={() => handleNavigate('Notifications')}
         />
 
         <main className="ff-shell-main">{children}</main>
