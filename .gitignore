@@ -11,3 +11,7 @@ venv/
 .vscode/
 .idea/
 .pytest_cache/
+
+# .NET build output
+bin/
+obj/
