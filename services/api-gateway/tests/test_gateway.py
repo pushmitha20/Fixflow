@@ -2,7 +2,7 @@ import httpx
 from fastapi.testclient import TestClient
 from unittest.mock import patch
 
-from app.main import DOWNSTREAM_TIMEOUT_SECONDS, app
+from app.main import DOWNSTREAM_TIMEOUT_SECONDS, app, parse_allowed_origins
 
 
 client = TestClient(app)
@@ -619,3 +619,10 @@ def test_get_analytics_summary_analytics_service_unreachable_returns_503(mock_ge
 
     assert response.status_code == 503
     assert response.json() == {"detail": "Analytics service unavailable"}
+
+
+def test_parse_allowed_origins_trims_and_rejects_blank_and_wildcard_entries():
+    assert parse_allowed_origins(
+        " https://fixflow.example.com , ,*, http://localhost:5173 ,"
+    ) == ["https://fixflow.example.com", "http://localhost:5173"]
+    assert parse_allowed_origins("*") == []

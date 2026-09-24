@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -5,21 +7,34 @@ import httpx
 
 app = FastAPI(title="FixFlow API Gateway")
 
-MAINTENANCE_SERVICE_URL = "http://localhost:8001"
-USER_SERVICE_URL = "http://localhost:8002"
-NOTIFICATION_SERVICE_URL = "http://localhost:8003"
-ANALYTICS_SERVICE_URL = "http://localhost:8004"
-ASSIGNMENT_SERVICE_URL = "http://localhost:5251"
+# Environment values win; the localhost defaults keep local development unchanged.
+# An empty value is treated as unset.
+MAINTENANCE_SERVICE_URL = os.getenv("MAINTENANCE_SERVICE_URL") or "http://localhost:8001"
+USER_SERVICE_URL = os.getenv("USER_SERVICE_URL") or "http://localhost:8002"
+NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL") or "http://localhost:8003"
+ANALYTICS_SERVICE_URL = os.getenv("ANALYTICS_SERVICE_URL") or "http://localhost:8004"
+ASSIGNMENT_SERVICE_URL = os.getenv("ASSIGNMENT_SERVICE_URL") or "http://localhost:5251"
+
+DEFAULT_CORS_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+
+
+def parse_allowed_origins(value):
+    # Comma-separated origins; blanks are ignored and "*" is never accepted,
+    # so a misconfiguration cannot silently open the gateway to every origin.
+    origins = (origin.strip() for origin in value.split(","))
+    return [origin for origin in origins if origin and origin != "*"]
+
+
+CORS_ALLOWED_ORIGINS = parse_allowed_origins(
+    os.getenv("CORS_ALLOWED_ORIGINS") or DEFAULT_CORS_ALLOWED_ORIGINS
+)
 
 # Matches httpx's implicit default, made explicit so every downstream call shares one limit.
 DOWNSTREAM_TIMEOUT_SECONDS = 5.0
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
