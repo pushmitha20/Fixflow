@@ -9,13 +9,16 @@ public class KafkaConsumerService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly KafkaProducerService _producer;
+    private readonly ILogger<KafkaConsumerService> _logger;
 
     public KafkaConsumerService(
         IServiceScopeFactory scopeFactory,
-        KafkaProducerService producer)
+        KafkaProducerService producer,
+        ILogger<KafkaConsumerService> logger)
     {
         _scopeFactory = scopeFactory;
         _producer = producer;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(
@@ -41,53 +44,89 @@ public class KafkaConsumerService : BackgroundService
         {
             var result = consumer.Consume(stoppingToken);
 
-            var eventData = JsonSerializer.Deserialize<MaintenanceRequestCreatedEvent>(
+            await HandleMessageAsync(
                 result.Message.Value,
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                }
+                result.TopicPartitionOffset.ToString(),
+                stoppingToken
+            );
+        }
+    }
+
+    // One bad or unprocessable event is logged and skipped so it cannot stop the
+    // consumer (or, via BackgroundService, the whole host). Shutdown still propagates.
+    public async Task HandleMessageAsync(
+        string messageValue,
+        string source,
+        CancellationToken stoppingToken)
+    {
+        try
+        {
+            await ProcessMessageAsync(messageValue, stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to process maintenance event at {Source}; skipping it",
+                source
+            );
+        }
+    }
+
+    private async Task ProcessMessageAsync(
+        string messageValue,
+        CancellationToken stoppingToken)
+    {
+        var eventData = JsonSerializer.Deserialize<MaintenanceRequestCreatedEvent>(
+            messageValue,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }
+        );
+
+        if (eventData is not null)
+        {
+            Console.WriteLine(
+                $"Maintenance request received: {eventData.RequestId}"
             );
 
-            if (eventData is not null)
+            using var scope = _scopeFactory.CreateScope();
+
+            var db = scope.ServiceProvider
+                .GetRequiredService<assignment_service.Data.AssignmentDbContext>();
+
+            var assignment = new assignment_service.Models.Assignment
             {
-                Console.WriteLine(
-                    $"Maintenance request received: {eventData.RequestId}"
-                );
+                MaintenanceRequestId = eventData.RequestId,
+                TechnicianId = 1
+            };
 
-                using var scope = _scopeFactory.CreateScope();
+            db.Assignments.Add(assignment);
 
-                var db = scope.ServiceProvider
-                    .GetRequiredService<assignment_service.Data.AssignmentDbContext>();
+            await db.SaveChangesAsync(stoppingToken);
 
-                var assignment = new assignment_service.Models.Assignment
-                {
-                    MaintenanceRequestId = eventData.RequestId,
-                    TechnicianId = 1
-                };
+            Console.WriteLine(
+                $"Assignment created: {assignment.Id}"
+            );
 
-                db.Assignments.Add(assignment);
+            var assignedEvent = new MaintenanceRequestAssignedEvent
+            {
+                RequestId = eventData.RequestId,
+                UserId = eventData.UserId,
+                AssignmentId = assignment.Id,
+                TechnicianId = assignment.TechnicianId
+            };
 
-                await db.SaveChangesAsync(stoppingToken);
+            _producer.PublishAssignmentCreated(assignedEvent);
 
-                Console.WriteLine(
-                    $"Assignment created: {assignment.Id}"
-                );
-
-                var assignedEvent = new MaintenanceRequestAssignedEvent
-                {
-                    RequestId = eventData.RequestId,
-                    UserId = eventData.UserId,
-                    AssignmentId = assignment.Id,
-                    TechnicianId = assignment.TechnicianId
-                };
-
-                _producer.PublishAssignmentCreated(assignedEvent);
-
-                Console.WriteLine(
-                    $"Assignment event published for request: {eventData.RequestId}"
-                );
-            }
+            Console.WriteLine(
+                $"Assignment event published for request: {eventData.RequestId}"
+            );
         }
     }
 }
