@@ -21,12 +21,15 @@ type AssignmentRow = {
   assignment: Assignment
   request?: MaintenanceRequest
   technician?: User
+  // False when GET /requests failed, so a missing request means "unknown", not "absent".
+  requestsLoaded: boolean
 }
 
 type AssignmentData = {
   assignments: Assignment[]
   requests: MaintenanceRequest[]
   users: User[]
+  requestsLoaded: boolean
   unavailableSources: string[]
 }
 
@@ -81,6 +84,7 @@ const fetchAssignmentData = async (): Promise<AssignmentData> => {
     assignments: assignmentResult.value,
     requests: requestResult.status === 'fulfilled' ? requestResult.value : [],
     users: userResult.status === 'fulfilled' ? userResult.value : [],
+    requestsLoaded: requestResult.status === 'fulfilled',
     unavailableSources,
   }
 }
@@ -172,6 +176,7 @@ export default function Assignments({ onNavigate }: AssignmentsProps) {
         assignment,
         request: requestsById.get(assignment.maintenanceRequestId),
         technician: usersById.get(assignment.technicianId),
+        requestsLoaded: data.requestsLoaded,
       }))
       .sort(
         (a, b) =>
@@ -351,7 +356,7 @@ export default function Assignments({ onNavigate }: AssignmentsProps) {
                 </div>
                 <ul className="ff-assignment-table__body" aria-label="Technician assignments">
                   {filteredRows.map((row) => {
-                    const { assignment, request } = row
+                    const { assignment, request, requestsLoaded } = row
                     const isSelected = selectedAssignmentId === assignment.id
 
                     return (
@@ -368,7 +373,11 @@ export default function Assignments({ onNavigate }: AssignmentsProps) {
                             <strong>{requestLabel(row)}</strong>
                             <small>
                               #{assignment.maintenanceRequestId}
-                              {request ? ` · ${request.location}` : ' · not in current requests'}
+                              {request
+                                ? ` · ${request.location}`
+                                : requestsLoaded
+                                  ? ' · not in current requests'
+                                  : ' · request details unavailable'}
                             </small>
                           </span>
                           <span className="ff-assignment-item__cell">
@@ -435,7 +444,7 @@ type AssignmentDetailsDrawerProps = {
 
 function AssignmentDetailsDrawer({ row, onClose }: AssignmentDetailsDrawerProps) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
-  const { assignment, request, technician } = row
+  const { assignment, request, technician, requestsLoaded } = row
 
   useEffect(() => {
     const focusTimer = window.setTimeout(() => {
@@ -552,10 +561,17 @@ function AssignmentDetailsDrawer({ row, onClose }: AssignmentDetailsDrawerProps)
               <div className="ff-detail-state" role="status">
                 <p className="label">Limited data</p>
                 <h3>Request details unavailable</h3>
-                <p>
-                  Request #{assignment.maintenanceRequestId} is not among the maintenance requests currently
-                  returned by the gateway.
-                </p>
+                {requestsLoaded ? (
+                  <p>
+                    Request #{assignment.maintenanceRequestId} is not among the maintenance requests currently
+                    returned by the gateway.
+                  </p>
+                ) : (
+                  <p>
+                    Maintenance requests could not be loaded, so details for request #
+                    {assignment.maintenanceRequestId} cannot be shown right now.
+                  </p>
+                )}
               </div>
             )}
           </div>
