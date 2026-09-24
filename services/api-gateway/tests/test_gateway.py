@@ -428,5 +428,194 @@ def test_delete_request_route(mock_delete):
     }
 
     mock_delete.assert_called_once_with(
-        "http://localhost:8001/requests/28"
+        "http://localhost:8001/requests/28",
+        timeout=DOWNSTREAM_TIMEOUT_SECONDS
     )
+
+
+REQUEST_NOT_FOUND = {"detail": "Request not found"}
+REQUEST_PAYLOAD = {
+    "user_id": 2,
+    "title": "Projector issue",
+    "description": "Projector is not working",
+    "location": "Lab 03",
+    "priority": "HIGH"
+}
+UPDATE_REQUEST_PAYLOAD = {
+    "title": "Updated gateway test",
+    "description": "Testing request update through API Gateway",
+    "location": "Lab 04",
+    "priority": "MEDIUM",
+    "status": "IN_PROGRESS"
+}
+
+
+def mock_downstream(mock, status_code, body):
+    # A real httpx.Response, so raise_for_status() behaves exactly as it would in production.
+    mock.return_value = httpx.Response(
+        status_code,
+        json=body,
+        request=httpx.Request("GET", "http://downstream"),
+    )
+
+
+def connect_error(method, url):
+    return httpx.ConnectError("Connection refused", request=httpx.Request(method, url))
+
+
+@patch("app.main.httpx.get")
+def test_get_request_missing_returns_404(mock_get):
+    mock_downstream(mock_get, 404, REQUEST_NOT_FOUND)
+
+    response = client.get("/requests/999")
+
+    assert response.status_code == 404
+    assert response.json() == REQUEST_NOT_FOUND
+
+
+@patch("app.main.httpx.post")
+def test_create_request_invalid_payload_returns_422(mock_post):
+    mock_downstream(mock_post, 422, VALIDATION_ERROR)
+
+    response = client.post("/requests", json={**REQUEST_PAYLOAD, "priority": "URGENT"})
+
+    assert response.status_code == 422
+    assert response.json() == VALIDATION_ERROR
+
+
+@patch("app.main.httpx.put")
+def test_update_request_missing_returns_404(mock_put):
+    mock_downstream(mock_put, 404, REQUEST_NOT_FOUND)
+
+    response = client.put("/requests/999", json=UPDATE_REQUEST_PAYLOAD)
+
+    assert response.status_code == 404
+    assert response.json() == REQUEST_NOT_FOUND
+
+
+@patch("app.main.httpx.put")
+def test_update_request_invalid_payload_returns_422(mock_put):
+    mock_downstream(mock_put, 422, VALIDATION_ERROR)
+
+    response = client.put("/requests/28", json={**UPDATE_REQUEST_PAYLOAD, "status": "DONE"})
+
+    assert response.status_code == 422
+    assert response.json() == VALIDATION_ERROR
+
+
+@patch("app.main.httpx.delete")
+def test_delete_request_missing_returns_404(mock_delete):
+    mock_downstream(mock_delete, 404, REQUEST_NOT_FOUND)
+
+    response = client.delete("/requests/999")
+
+    assert response.status_code == 404
+    assert response.json() == REQUEST_NOT_FOUND
+
+
+@patch("app.main.httpx.get")
+def test_get_requests_maintenance_unreachable_returns_503(mock_get):
+    mock_get.side_effect = connect_error("GET", "http://localhost:8001/requests")
+
+    response = client.get("/requests")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Maintenance service unavailable"}
+
+
+@patch("app.main.httpx.post")
+def test_create_request_maintenance_timeout_returns_503(mock_post):
+    mock_post.side_effect = httpx.ReadTimeout(
+        "Read timed out",
+        request=httpx.Request("POST", "http://localhost:8001/requests"),
+    )
+
+    response = client.post("/requests", json=REQUEST_PAYLOAD)
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Maintenance service unavailable"}
+
+
+@patch("app.main.httpx.get")
+def test_downstream_calls_use_explicit_timeout(mock_get):
+    mock_downstream(mock_get, 200, [])
+
+    client.get("/requests")
+
+    assert mock_get.call_args.kwargs["timeout"] == DOWNSTREAM_TIMEOUT_SECONDS
+
+
+@patch("app.main.httpx.post")
+def test_create_assignment_invalid_payload_returns_400(mock_post):
+    # ASP.NET Core [ApiController] rejects malformed bodies with a 400 problem-details body.
+    problem = {"title": "One or more validation errors occurred.", "status": 400}
+    mock_downstream(mock_post, 400, problem)
+
+    response = client.post("/assignments", json={"maintenanceRequestId": "not-a-number"})
+
+    assert response.status_code == 400
+    assert response.json() == problem
+
+
+@patch("app.main.httpx.get")
+def test_get_assignments_non_json_error_returns_detail(mock_get):
+    mock_get.return_value = httpx.Response(
+        500,
+        text="Internal Server Error",
+        request=httpx.Request("GET", "http://localhost:5251/assignments"),
+    )
+
+    response = client.get("/assignments")
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Internal Server Error"}
+
+
+@patch("app.main.httpx.get")
+def test_get_assignments_assignment_service_unreachable_returns_503(mock_get):
+    mock_get.side_effect = connect_error("GET", "http://localhost:5251/assignments")
+
+    response = client.get("/assignments")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Assignment service unavailable"}
+
+
+@patch("app.main.httpx.post")
+def test_create_notification_invalid_payload_returns_422(mock_post):
+    mock_downstream(mock_post, 422, VALIDATION_ERROR)
+
+    response = client.post("/notifications", json={"user_id": 0, "message": "", "type": ""})
+
+    assert response.status_code == 422
+    assert response.json() == VALIDATION_ERROR
+
+
+@patch("app.main.httpx.get")
+def test_get_notifications_notification_service_unreachable_returns_503(mock_get):
+    mock_get.side_effect = connect_error("GET", "http://localhost:8003/notifications")
+
+    response = client.get("/notifications")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Notification service unavailable"}
+
+
+@patch("app.main.httpx.get")
+def test_get_analytics_summary_downstream_error_passthrough(mock_get):
+    mock_downstream(mock_get, 500, {"detail": "Analytics database unavailable"})
+
+    response = client.get("/analytics/summary")
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Analytics database unavailable"}
+
+
+@patch("app.main.httpx.get")
+def test_get_analytics_summary_analytics_service_unreachable_returns_503(mock_get):
+    mock_get.side_effect = connect_error("GET", "http://localhost:8004/analytics/summary")
+
+    response = client.get("/analytics/summary")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Analytics service unavailable"}
