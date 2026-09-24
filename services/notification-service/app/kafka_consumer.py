@@ -5,13 +5,15 @@ from confluent_kafka import Consumer
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
+from app.kafka_config import kafka_security_config
 from app.models import Notification
 
 
 consumer = Consumer({
     "bootstrap.servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
     "group.id": "fixflow-notification-service",
-    "auto.offset.reset": "latest"
+    "auto.offset.reset": "latest",
+    **kafka_security_config()
 })
 
 

@@ -5,6 +5,7 @@ import os
 from confluent_kafka import Consumer
 
 from app.database import SessionLocal
+from app.kafka_config import kafka_security_config
 from app.models import AnalyticsEvent
 
 
@@ -13,7 +14,8 @@ logger = logging.getLogger(__name__)
 consumer = Consumer({
     "bootstrap.servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
     "group.id": "fixflow-analytics-service",
-    "auto.offset.reset": "latest"
+    "auto.offset.reset": "latest",
+    **kafka_security_config()
 })
 
 

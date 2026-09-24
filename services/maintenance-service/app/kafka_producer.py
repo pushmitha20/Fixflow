@@ -4,6 +4,8 @@ import os
 
 from confluent_kafka import KafkaException, Producer
 
+from app.kafka_config import kafka_security_config
+
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +19,7 @@ producer = Producer({
     "message.timeout.ms": int(KAFKA_FLUSH_TIMEOUT_SECONDS * 1000),
     "socket.timeout.ms": int(KAFKA_FLUSH_TIMEOUT_SECONDS * 1000),
     "request.timeout.ms": int(KAFKA_FLUSH_TIMEOUT_SECONDS * 1000),
+    **kafka_security_config(),
 })
 
 
