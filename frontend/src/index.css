@@ -1985,6 +1985,26 @@ h2 {
   background: rgba(255, 255, 255, 0.55);
 }
 
+.ff-lifecycle__item--open {
+  border-color: rgba(119, 122, 114, 0.45);
+  background: rgba(119, 122, 114, 0.07);
+}
+
+.ff-lifecycle__item--in-progress {
+  border-color: rgba(184, 121, 40, 0.45);
+  background: rgba(184, 121, 40, 0.08);
+}
+
+.ff-lifecycle__item--resolved {
+  border-color: rgba(63, 118, 85, 0.45);
+  background: rgba(63, 118, 85, 0.08);
+}
+
+.ff-lifecycle__item--closed {
+  border-color: rgba(23, 35, 31, 0.35);
+  background: rgba(23, 35, 31, 0.05);
+}
+
 .ff-lifecycle__meta {
   display: flex;
   flex-direction: column;
