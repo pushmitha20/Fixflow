@@ -111,7 +111,11 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <Lifecycle stages={lifecycleStages} />
 
             <section className="ff-dashboard__split" aria-label="Recent operational activity">
-              <RecentRequests requests={recentRequests} onOpenRequest={setViewedRequestId} />
+              <RecentRequests
+                requests={recentRequests}
+                onOpenRequest={setViewedRequestId}
+                onViewAll={() => onNavigate?.('Requests')}
+              />
               <NeedsAttention requests={attentionRequests} onViewAll={() => onNavigate?.('Requests')} />
             </section>
 
