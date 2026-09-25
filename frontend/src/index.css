@@ -845,6 +845,63 @@ h2 {
   border-bottom: none;
 }
 
+.ff-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--ff-border);
+}
+
+.ff-pagination__summary {
+  color: var(--ff-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.ff-pagination__controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ff-pagination__controls button {
+  min-height: 36px;
+  min-width: 36px;
+  border: 1px solid var(--ff-border);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.8);
+  padding: 0.45rem 0.72rem;
+  color: var(--ff-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ff-pagination__controls button:hover:not(:disabled) {
+  border-color: rgba(23, 107, 99, 0.2);
+  color: var(--ff-ink);
+}
+
+.ff-pagination__controls button.is-active {
+  background: var(--ff-brand-soft);
+  border-color: rgba(23, 107, 99, 0.22);
+  color: var(--ff-brand-dark);
+}
+
+.ff-pagination__controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ff-pagination__gap {
+  padding: 0 4px;
+  color: var(--ff-muted);
+  font-size: 0.78rem;
+}
+
 .ff-request-item:hover {
   background: rgba(221, 234, 228, 0.18);
   border-color: rgba(23, 107, 99, 0.12);

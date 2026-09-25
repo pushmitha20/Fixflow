@@ -76,6 +76,25 @@ const priorityClassNames: Record<RequestPriority, string> = {
   LOW: 'ff-priority--low',
 }
 
+const PAGE_SIZE = 10
+
+const getPageItems = (currentPage: number, pageCount: number): Array<number | 'gap'> => {
+  if (pageCount <= 5) {
+    return Array.from({ length: pageCount }, (_, index) => index + 1)
+  }
+
+  // A window of three pages around the current one, then the last page: "1 2 3 ... 10".
+  const windowStart = Math.min(Math.max(currentPage - 1, 1), pageCount - 3)
+  const items: Array<number | 'gap'> = [windowStart, windowStart + 1, windowStart + 2]
+
+  if (windowStart + 3 < pageCount) {
+    items.push('gap')
+  }
+  items.push(pageCount)
+
+  return items
+}
+
 const formatOptionalDateTime = (value?: string) => {
   if (!value) {
     return null
@@ -140,6 +159,7 @@ export default function Requests({ onNavigate, initialPriority = null }: Request
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>(initialPriority ?? 'ALL')
+  const [page, setPage] = useState(1)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null)
@@ -196,6 +216,11 @@ export default function Requests({ onNavigate, initialPriority = null }: Request
     }).sort((a, b) => b.id - a.id)
   }, [priorityFilter, requests, searchTerm, statusFilter])
 
+  const pageCount = Math.max(1, Math.ceil(filteredRequests.length / PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount)
+  const pageStart = (currentPage - 1) * PAGE_SIZE
+  const pagedRequests = filteredRequests.slice(pageStart, pageStart + PAGE_SIZE)
+
   const hasActiveFilters =
     searchTerm.trim().length > 0 ||
     statusFilter !== 'ALL' ||
@@ -209,6 +234,7 @@ export default function Requests({ onNavigate, initialPriority = null }: Request
     setSearchTerm('')
     setStatusFilter('ALL')
     setPriorityFilter('ALL')
+    setPage(1)
   }
 
   const loadRequestDetails = useCallback(async (requestId: number) => {
@@ -242,6 +268,7 @@ export default function Requests({ onNavigate, initialPriority = null }: Request
 
   const handleRequestCreated = (createdRequest: MaintenanceRequest) => {
     setRequests((current) => [createdRequest, ...current])
+    setPage(1)
     setError(null)
     setSuccessMessage(`Request "${createdRequest.title}" was created successfully.`)
   }
@@ -342,7 +369,10 @@ export default function Requests({ onNavigate, initialPriority = null }: Request
                 id="request-search"
                 type="search"
                 value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
+                onChange={(event) => {
+                  setSearchTerm(event.target.value)
+                  setPage(1)
+                }}
                 placeholder="Search title, location, or description"
               />
             </div>
@@ -355,7 +385,10 @@ export default function Requests({ onNavigate, initialPriority = null }: Request
                     key={option.value}
                     type="button"
                     className={statusFilter === option.value ? 'is-active' : ''}
-                    onClick={() => setStatusFilter(option.value)}
+                    onClick={() => {
+                      setStatusFilter(option.value)
+                      setPage(1)
+                    }}
                     aria-pressed={statusFilter === option.value}
                   >
                     {option.label}
@@ -372,7 +405,10 @@ export default function Requests({ onNavigate, initialPriority = null }: Request
                     key={option.value}
                     type="button"
                     className={priorityFilter === option.value ? 'is-active' : ''}
-                    onClick={() => setPriorityFilter(option.value)}
+                    onClick={() => {
+                      setPriorityFilter(option.value)
+                      setPage(1)
+                    }}
                     aria-pressed={priorityFilter === option.value}
                   >
                     {option.label}
@@ -428,7 +464,7 @@ export default function Requests({ onNavigate, initialPriority = null }: Request
                   <span role="columnheader">Status</span>
                 </div>
                 <div className="ff-request-table__body">
-                  {filteredRequests.map((request) => (
+                  {pagedRequests.map((request) => (
                     <button
                       key={request.id}
                       type="button"
@@ -460,6 +496,48 @@ export default function Requests({ onNavigate, initialPriority = null }: Request
                   ))}
                 </div>
               </div>
+            ) : null}
+
+            {!isLoading && !error && pageCount > 1 ? (
+              <nav className="ff-pagination" aria-label="Requests pages">
+                <span className="ff-pagination__summary">
+                  Showing {pageStart + 1}-{pageStart + pagedRequests.length} of {filteredRequests.length}
+                </span>
+                <div className="ff-pagination__controls">
+                  <button
+                    type="button"
+                    onClick={() => setPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </button>
+                  {getPageItems(currentPage, pageCount).map((item, index) =>
+                    item === 'gap' ? (
+                      <span key={`gap-${index}`} className="ff-pagination__gap" aria-hidden="true">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={item}
+                        type="button"
+                        className={item === currentPage ? 'is-active' : ''}
+                        onClick={() => setPage(item)}
+                        aria-label={`Page ${item}`}
+                        aria-current={item === currentPage ? 'page' : undefined}
+                      >
+                        {item}
+                      </button>
+                    ),
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setPage(currentPage + 1)}
+                    disabled={currentPage === pageCount}
+                  >
+                    Next
+                  </button>
+                </div>
+              </nav>
             ) : null}
           </section>
         </Reveal>
