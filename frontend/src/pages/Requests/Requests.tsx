@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import AppLayout from '../../components/layout/AppLayout'
+import FilterSelect from '../../components/FilterSelect'
 import MotionButton from '../../components/MotionButton'
 import Reveal from '../../components/Reveal'
 import { requestService } from '../../services/requestService'
@@ -377,45 +378,25 @@ export default function Requests({ onNavigate, initialPriority = null }: Request
               />
             </div>
 
-            <div className="ff-filter-group" aria-label="Filter by status">
-              <span>Status</span>
-              <div className="ff-filter-group__options">
-                {statusOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={statusFilter === option.value ? 'is-active' : ''}
-                    onClick={() => {
-                      setStatusFilter(option.value)
-                      setPage(1)
-                    }}
-                    aria-pressed={statusFilter === option.value}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <FilterSelect
+              label="Status"
+              value={statusFilter}
+              options={statusOptions}
+              onChange={(value) => {
+                setStatusFilter(value)
+                setPage(1)
+              }}
+            />
 
-            <div className="ff-filter-group" aria-label="Filter by priority">
-              <span>Priority</span>
-              <div className="ff-filter-group__options">
-                {priorityOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={priorityFilter === option.value ? 'is-active' : ''}
-                    onClick={() => {
-                      setPriorityFilter(option.value)
-                      setPage(1)
-                    }}
-                    aria-pressed={priorityFilter === option.value}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <FilterSelect
+              label="Priority"
+              value={priorityFilter}
+              options={priorityOptions}
+              onChange={(value) => {
+                setPriorityFilter(value)
+                setPage(1)
+              }}
+            />
           </section>
 
           <section className="ff-requests__list" aria-labelledby="requests-list-heading">
