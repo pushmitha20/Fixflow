@@ -14,6 +14,7 @@ import CreateRequestDialog from './CreateRequestDialog'
 
 type RequestsProps = {
   onNavigate?: (item: string) => void
+  initialPriority?: RequestPriority | null
 }
 
 type StatusFilter = RequestStatus | 'ALL'
@@ -132,13 +133,13 @@ const validateEditForm = (form: RequestEditForm) => {
   return errors
 }
 
-export default function Requests({ onNavigate }: RequestsProps) {
+export default function Requests({ onNavigate, initialPriority = null }: RequestsProps) {
   const [requests, setRequests] = useState<MaintenanceRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
-  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('ALL')
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>(initialPriority ?? 'ALL')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null)
