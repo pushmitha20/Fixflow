@@ -1,23 +1,13 @@
 import Reveal from '../../../components/Reveal'
 import type { RecentRequest } from '../dashboardData'
+import { formatStatus, getPriorityClass, getStatusClass } from './requestBadges'
 
 type RecentRequestsProps = {
   requests: RecentRequest[]
+  onOpenRequest?: (requestId: number) => void
 }
 
-function getPriorityClass(priority: RecentRequest['priority']) {
-  return `ff-priority ff-priority--${priority.toLowerCase()}`
-}
-
-function getStatusClass(status: RecentRequest['status']) {
-  return `ff-status ff-status--${status.toLowerCase().replace(/_/g, '-')}`
-}
-
-function formatStatus(status: RecentRequest['status']) {
-  return status.replace(/_/g, ' ')
-}
-
-export default function RecentRequests({ requests }: RecentRequestsProps) {
+export default function RecentRequests({ requests, onOpenRequest }: RecentRequestsProps) {
   return (
     <Reveal as="section" className="ff-panel ff-panel--stack" aria-label="Recent requests">
       <div className="ff-section-head">
@@ -32,22 +22,30 @@ export default function RecentRequests({ requests }: RecentRequestsProps) {
       ) : (
         <ul className="ff-request-list" aria-label="Recent maintenance requests">
           {requests.map((request) => (
-            <li key={request.id} className="ff-request-row">
-              <div className="ff-request-row__main">
-                <div>
-                  <strong>{request.title}</strong>
-                  <span>{request.location}</span>
+            <li key={request.id} className="ff-request-list__item">
+              <button
+                type="button"
+                className="ff-request-row"
+                aria-haspopup="dialog"
+                aria-label={`View request ${request.title}, ${request.priority} priority, ${formatStatus(request.status)}`}
+                onClick={() => onOpenRequest?.(request.id)}
+              >
+                <div className="ff-request-row__main">
+                  <div>
+                    <strong>{request.title}</strong>
+                    <span>{request.location}</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="ff-request-row__meta">
-                <span className={getPriorityClass(request.priority)}>{request.priority}</span>
-                <span className={getStatusClass(request.status)}>{formatStatus(request.status)}</span>
-              </div>
+                <div className="ff-request-row__meta">
+                  <span className={getPriorityClass(request.priority)}>{request.priority}</span>
+                  <span className={getStatusClass(request.status)}>{formatStatus(request.status)}</span>
+                </div>
 
-              <span className="ff-request-row__arrow" aria-hidden="true">
-                →
-              </span>
+                <span className="ff-request-row__arrow" aria-hidden="true">
+                  →
+                </span>
+              </button>
             </li>
           ))}
         </ul>
