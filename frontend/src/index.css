@@ -2024,7 +2024,8 @@ h2 {
   padding: 18px;
 }
 
-.ff-lifecycle .ff-section-head h3 {
+.ff-lifecycle .ff-section-head h3,
+.ff-panel--recent .ff-section-head h3 {
   margin: 0;
 }
 
