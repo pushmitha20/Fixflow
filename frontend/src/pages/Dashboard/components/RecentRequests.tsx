@@ -5,9 +5,10 @@ import { formatStatus, getPriorityClass, getStatusClass } from './requestBadges'
 type RecentRequestsProps = {
   requests: RecentRequest[]
   onOpenRequest?: (requestId: number) => void
+  onViewAll?: () => void
 }
 
-export default function RecentRequests({ requests, onOpenRequest }: RecentRequestsProps) {
+export default function RecentRequests({ requests, onOpenRequest, onViewAll }: RecentRequestsProps) {
   return (
     <Reveal as="section" className="ff-panel ff-panel--stack ff-panel--recent" aria-label="Recent requests">
       <div className="ff-section-head">
@@ -49,6 +50,15 @@ export default function RecentRequests({ requests, onOpenRequest }: RecentReques
           ))}
         </ul>
       )}
+
+      <div className="ff-panel__footer">
+        <button type="button" className="ff-panel__footer-link" onClick={onViewAll}>
+          View all requests
+          <span className="ff-panel__footer-arrow" aria-hidden="true">
+            →
+          </span>
+        </button>
+      </div>
     </Reveal>
   )
 }
