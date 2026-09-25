@@ -29,7 +29,7 @@ export default function TopBar({
         </button>
 
         <div className="ff-topbar__heading">
-          <p className="eyebrow">{subtitle}</p>
+          {subtitle && <p className="eyebrow">{subtitle}</p>}
           <h2>{title}</h2>
         </div>
       </div>
