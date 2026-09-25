@@ -9,10 +9,9 @@ type RecentRequestsProps = {
 
 export default function RecentRequests({ requests, onOpenRequest }: RecentRequestsProps) {
   return (
-    <Reveal as="section" className="ff-panel ff-panel--stack" aria-label="Recent requests">
+    <Reveal as="section" className="ff-panel ff-panel--stack ff-panel--recent" aria-label="Recent requests">
       <div className="ff-section-head">
         <div>
-          <p className="label">Operational queue</p>
           <h3>Recent requests</h3>
         </div>
       </div>
