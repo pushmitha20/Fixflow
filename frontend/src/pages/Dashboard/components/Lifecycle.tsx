@@ -10,7 +10,6 @@ export default function Lifecycle({ stages }: LifecycleProps) {
     <Reveal as="section" className="ff-lifecycle" aria-label="Request lifecycle">
       <div className="ff-section-head">
         <div>
-          <p className="label">Lifecycle</p>
           <h3>Request flow</h3>
         </div>
       </div>
