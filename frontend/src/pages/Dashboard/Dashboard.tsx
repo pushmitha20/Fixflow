@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import AppLayout from '../../components/layout/AppLayout'
 import MotionButton from '../../components/MotionButton'
 import Reveal from '../../components/Reveal'
@@ -18,6 +18,7 @@ import {
   NeedsAttention,
   OperationsPulse,
   RecentRequests,
+  RequestQuickView,
 } from './components'
 
 type DashboardProps = {
@@ -28,6 +29,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const [requests, setRequests] = useState<MaintenanceRequest[] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [viewedRequestId, setViewedRequestId] = useState<number | null>(null)
 
   const loadDashboard = async () => {
     setIsLoading(true)
@@ -72,6 +74,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const attentionRequests = useMemo(() => buildNeedsAttention(requests ?? []), [requests])
   const pulsePoints = useMemo(() => buildPulsePoints(requests ?? []), [requests])
 
+  const viewedRequest = useMemo(
+    () => requests?.find((request) => request.id === viewedRequestId) ?? null,
+    [requests, viewedRequestId],
+  )
+  const closeRequestView = useCallback(() => setViewedRequestId(null), [])
+
   const hasData = requests !== null
 
   return (
@@ -103,7 +111,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <Lifecycle stages={lifecycleStages} />
 
             <section className="ff-dashboard__split" aria-label="Recent operational activity">
-              <RecentRequests requests={recentRequests} />
+              <RecentRequests requests={recentRequests} onOpenRequest={setViewedRequestId} />
               <NeedsAttention requests={attentionRequests} onViewAll={() => onNavigate?.('Requests')} />
             </section>
 
@@ -111,6 +119,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           </>
         ) : null}
       </div>
+
+      {viewedRequest ? <RequestQuickView request={viewedRequest} onClose={closeRequestView} /> : null}
     </AppLayout>
   )
 }
