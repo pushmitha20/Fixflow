@@ -441,7 +441,7 @@ h2 {
   align-items: end;
   justify-content: space-between;
   gap: 24px;
-  padding: 10px 0 4px;
+  padding: 0 0 4px;
 }
 
 .ff-dashboard__intro h1 {
@@ -450,7 +450,7 @@ h2 {
   line-height: 1.04;
   letter-spacing: -0.055em;
   font-weight: 700;
-  margin-top: 10px;
+  margin-top: 0;
 }
 
 .ff-requests__intro {

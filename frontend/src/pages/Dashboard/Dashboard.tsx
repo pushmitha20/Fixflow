@@ -79,7 +79,6 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       <div className="ff-dashboard">
         <Reveal as="header" className="ff-dashboard__intro" delay={40}>
           <div>
-            <p className="label">Operations overview</p>
             <h1>Keep track of maintenance activity across your organization.</h1>
           </div>
           <MotionButton variant="primary" arrow onClick={() => onNavigate?.('Requests')}>
