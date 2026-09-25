@@ -70,7 +70,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
   const metrics = useMemo(() => buildMetrics(requests ?? []), [requests])
   const lifecycleStages = useMemo(() => buildLifecycleStages(requests ?? []), [requests])
-  const recentRequests = useMemo(() => buildRecentRequests(requests ?? []), [requests])
+  const recentRequests = useMemo(() => buildRecentRequests(requests ?? [], 6), [requests])
   const attentionRequests = useMemo(() => buildNeedsAttention(requests ?? []), [requests])
   const pulsePoints = useMemo(() => buildPulsePoints(requests ?? []), [requests])
 
