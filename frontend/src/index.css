@@ -1777,6 +1777,23 @@ h2 {
   box-shadow: -18px 0 36px rgba(23, 35, 31, 0.12);
 }
 
+.ff-details-backdrop.ff-details-backdrop--popup {
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(18, 28, 25, 0.4);
+}
+
+.ff-details-drawer.ff-details-drawer--popup {
+  width: min(620px, 100%);
+  height: auto;
+  max-height: min(90vh, 760px);
+  border: 1px solid var(--ff-border);
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(23, 35, 31, 0.12);
+  overflow: hidden;
+}
+
 .ff-details-drawer__header {
   display: flex;
   align-items: flex-start;

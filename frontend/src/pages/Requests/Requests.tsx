@@ -800,9 +800,9 @@ function RequestDetailsDrawer({
   }
 
   return (
-    <div className="ff-details-backdrop" onClick={handleDrawerClose}>
+    <div className="ff-details-backdrop ff-details-backdrop--popup" onClick={handleDrawerClose}>
       <aside
-        className="ff-details-drawer"
+        className="ff-details-drawer ff-details-drawer--popup"
         role="dialog"
         aria-modal="true"
         aria-labelledby="request-details-title"
@@ -811,9 +811,11 @@ function RequestDetailsDrawer({
       >
         <header className="ff-details-drawer__header">
           <div>
-            <p className="label">Request details</p>
+            <p className="label">{isDeleteConfirmOpen ? 'Confirm deletion' : 'Request details'}</p>
             <h2 id="request-details-title">
-              {request ? request.title : requestId ? `Request #${requestId}` : 'Request'}
+              {isDeleteConfirmOpen
+                ? 'Delete request'
+                : request ? request.title : requestId ? `Request #${requestId}` : 'Request'}
             </h2>
           </div>
           <div className="ff-details-drawer__actions">
@@ -836,7 +838,7 @@ function RequestDetailsDrawer({
             <button
               ref={closeButtonRef}
               type="button"
-              className="ff-icon-button"
+              className="ff-icon-button ff-request-quick-view__close"
               aria-label={isEditing || isDeleteConfirmOpen ? 'Cancel editing request' : 'Close request details'}
               onClick={handleDrawerClose}
             >
@@ -871,8 +873,17 @@ function RequestDetailsDrawer({
 
           {!isLoading && !error && request && isDeleteConfirmOpen ? (
             <div className="ff-detail-delete-confirmation" role="alertdialog" aria-labelledby="request-delete-title" aria-describedby="request-delete-description">
-              <p className="label">Delete request</p>
-              <h3 id="request-delete-title">Delete "{request.title}"?</h3>
+              <h3 id="request-delete-title">Are you sure you want to delete this request?</h3>
+              <div className="ff-detail-edit-meta" aria-label="Request to delete">
+                <div>
+                  <span>Request</span>
+                  <strong>{request.title}</strong>
+                </div>
+                <div>
+                  <span>Request ID</span>
+                  <strong>#{request.id}</strong>
+                </div>
+              </div>
               <p id="request-delete-description">This action cannot be undone.</p>
 
               {deleteError ? (
@@ -1054,7 +1065,7 @@ function RequestDetailsDrawer({
             </form>
           ) : null}
 
-          {!isLoading && !error && request && !isEditing ? (
+          {!isLoading && !error && request && !isEditing && !isDeleteConfirmOpen ? (
             <div className="ff-detail-content">
               <section className="ff-detail-hero" aria-label="Request summary">
                 <span className="ff-detail-id">#{request.id}</span>
