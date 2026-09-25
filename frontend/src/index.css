@@ -570,7 +570,9 @@ h2 {
 
 .ff-select__value {
   min-width: 0;
-  overflow: hidden;
+  /* Clip long labels horizontally only, so descenders are never cut off. */
+  overflow-x: clip;
+  overflow-y: visible;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
