@@ -321,11 +321,11 @@ h2 {
 }
 
 .ff-topbar__action {
-  border: 1px solid var(--ff-border);
+  border: 1px solid var(--ff-brand);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.75);
-  color: var(--ff-ink);
-  transition: border-color 160ms ease, transform 160ms ease;
+  background: var(--ff-brand);
+  color: var(--ff-white);
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
 
 .ff-topbar__action {
@@ -345,6 +345,11 @@ h2 {
 .ff-topbar__menu:hover {
   transform: translateY(-1px);
   border-color: rgba(23, 107, 99, 0.18);
+}
+
+.ff-topbar__action:hover {
+  background: var(--ff-brand-dark);
+  border-color: var(--ff-brand-dark);
 }
 
 .ff-motion-button {
