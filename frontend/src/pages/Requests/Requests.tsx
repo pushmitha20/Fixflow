@@ -317,11 +317,10 @@ export default function Requests({ onNavigate, initialPriority = null }: Request
   }, [selectedRequestId])
 
   return (
-    <AppLayout title="Requests" subtitle="Maintenance desk" onNavigate={onNavigate}>
+    <AppLayout title="Requests" subtitle="" onNavigate={onNavigate}>
       <div className="ff-requests">
-        <Reveal as="header" className="ff-requests__intro" delay={40}>
+        <Reveal as="header" className="ff-requests__intro ff-requests__intro--top" delay={40}>
           <div>
-            <p className="label">Maintenance requests</p>
             <h1>Track, prioritize, and manage maintenance requests across facilities.</h1>
           </div>
           <MotionButton variant="primary" arrow onClick={() => setIsCreateOpen(true)}>
