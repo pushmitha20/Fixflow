@@ -3,7 +3,7 @@ import type { RecentRequest } from '../dashboardData'
 
 type NeedsAttentionProps = {
   requests: RecentRequest[]
-  onViewAll?: () => void
+  onViewHighPriority?: () => void
 }
 
 const VISIBLE_LIMIT = 5
@@ -12,12 +12,11 @@ function getPriorityClass(priority: RecentRequest['priority']) {
   return `ff-priority ff-priority--${priority.toLowerCase()}`
 }
 
-export default function NeedsAttention({ requests, onViewAll }: NeedsAttentionProps) {
+export default function NeedsAttention({ requests, onViewHighPriority }: NeedsAttentionProps) {
   const visibleRequests = requests.slice(0, VISIBLE_LIMIT)
-  const hiddenCount = requests.length - visibleRequests.length
 
   return (
-    <Reveal as="section" className="ff-panel ff-panel--stack" aria-label="Needs attention">
+    <Reveal as="section" className="ff-panel ff-panel--stack ff-panel--with-footer" aria-label="Needs attention">
       <div className="ff-section-head">
         <div>
           <p className="label">Attention</p>
@@ -42,11 +41,14 @@ export default function NeedsAttention({ requests, onViewAll }: NeedsAttentionPr
         </ul>
       )}
 
-      {hiddenCount > 0 ? (
-        <button type="button" className="ff-secondary-button ff-attention-more" onClick={onViewAll}>
-          +{hiddenCount} more · View requests
+      <div className="ff-panel__footer">
+        <button type="button" className="ff-panel__footer-link" onClick={onViewHighPriority}>
+          View high-priority requests
+          <span className="ff-panel__footer-arrow" aria-hidden="true">
+            →
+          </span>
         </button>
-      ) : null}
+      </div>
     </Reveal>
   )
 }
