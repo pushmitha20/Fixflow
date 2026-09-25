@@ -3,7 +3,7 @@ import AppLayout from '../../components/layout/AppLayout'
 import MotionButton from '../../components/MotionButton'
 import Reveal from '../../components/Reveal'
 import { requestService } from '../../services/requestService'
-import type { MaintenanceRequest } from '../../types/api'
+import type { MaintenanceRequest, RequestPriority } from '../../types/api'
 import { ApiError } from '../../types/api'
 import {
   buildLifecycleStages,
@@ -23,9 +23,10 @@ import {
 
 type DashboardProps = {
   onNavigate?: (item: string) => void
+  onViewRequestsByPriority?: (priority: RequestPriority) => void
 }
 
-export default function Dashboard({ onNavigate }: DashboardProps) {
+export default function Dashboard({ onNavigate, onViewRequestsByPriority }: DashboardProps) {
   const [requests, setRequests] = useState<MaintenanceRequest[] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -116,7 +117,10 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 onOpenRequest={setViewedRequestId}
                 onViewAll={() => onNavigate?.('Requests')}
               />
-              <NeedsAttention requests={attentionRequests} onViewAll={() => onNavigate?.('Requests')} />
+              <NeedsAttention
+                requests={attentionRequests}
+                onViewHighPriority={() => onViewRequestsByPriority?.('HIGH')}
+              />
             </section>
 
             <OperationsPulse points={pulsePoints} />
