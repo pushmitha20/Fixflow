@@ -1998,13 +1998,14 @@ h2 {
   min-height: 100%;
 }
 
-.ff-panel--recent {
+.ff-panel--with-footer {
   display: flex;
   flex-direction: column;
 }
 
-.ff-panel--recent .ff-request-list,
-.ff-panel--recent .ff-dashboard-empty {
+.ff-panel--with-footer .ff-request-list,
+.ff-panel--with-footer .ff-attention-list,
+.ff-panel--with-footer .ff-dashboard-empty {
   margin-bottom: 12px;
 }
 
@@ -2020,7 +2021,8 @@ h2 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
+  min-height: 36px;
+  padding: 8px 10px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
@@ -2151,8 +2153,7 @@ h2 {
   gap: 24px;
 }
 
-.ff-request-list,
-.ff-attention-more {
+.ff-request-list {
   margin-top: 12px;
 }
 
