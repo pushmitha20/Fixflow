@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 
 export type FilterSelectOption<TValue extends string> = {
@@ -11,15 +11,56 @@ type FilterSelectProps<TValue extends string> = {
   value: TValue
   options: Array<FilterSelectOption<TValue>>
   onChange: (value: TValue) => void
+  className?: string
+  disabled?: boolean
+  invalid?: boolean
+  describedBy?: string
 }
 
-// Listbox-pattern dropdown for filter toolbars: a trigger button that opens a
-// themed option menu, replacing the browser-rendered native <select> popup.
+type MenuPlacement = {
+  side: 'bottom' | 'top'
+  maxHeight?: number
+}
+
+const MENU_GAP = 6
+const MENU_MAX_HEIGHT = 260
+const MENU_MIN_HEIGHT = 120
+
+const isClippingElement = (element: HTMLElement) => {
+  const { overflowY } = window.getComputedStyle(element)
+  return overflowY !== 'visible'
+}
+
+// Visible vertical bounds for the menu: the viewport, narrowed by any
+// scrolling/clipping ancestor (e.g. a modal body).
+const getClippingBounds = (element: HTMLElement) => {
+  let top = 0
+  let bottom = window.innerHeight
+  let ancestor = element.parentElement
+
+  while (ancestor && ancestor !== document.body) {
+    if (isClippingElement(ancestor)) {
+      const rect = ancestor.getBoundingClientRect()
+      top = Math.max(top, rect.top)
+      bottom = Math.min(bottom, rect.bottom)
+    }
+    ancestor = ancestor.parentElement
+  }
+
+  return { top, bottom }
+}
+
+// Listbox-pattern dropdown shared by filter toolbars and forms: a trigger button
+// that opens a themed option menu, replacing the browser-rendered native <select> popup.
 export default function FilterSelect<TValue extends string>({
   label,
   value,
   options,
   onChange,
+  className = 'ff-filter-group',
+  disabled = false,
+  invalid = false,
+  describedBy,
 }: FilterSelectProps<TValue>) {
   const id = useId()
   const labelId = `${id}-label`
@@ -32,6 +73,7 @@ export default function FilterSelect<TValue extends string>({
   const listboxRef = useRef<HTMLUListElement | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [placement, setPlacement] = useState<MenuPlacement>({ side: 'bottom' })
 
   const selectedIndex = Math.max(
     options.findIndex((option) => option.value === value),
@@ -41,6 +83,7 @@ export default function FilterSelect<TValue extends string>({
 
   const openMenu = (index = selectedIndex) => {
     setActiveIndex(index)
+    setPlacement({ side: 'bottom' })
     setIsOpen(true)
   }
 
@@ -62,12 +105,41 @@ export default function FilterSelect<TValue extends string>({
     closeMenu(true)
   }
 
+  // Open downward when the menu fits, otherwise flip above the trigger, so it
+  // is never cut off by a scrolling container such as a modal body.
+  useLayoutEffect(() => {
+    const root = rootRef.current
+    const listbox = listboxRef.current
+
+    if (!isOpen || !root || !listbox) {
+      return
+    }
+
+    const triggerRect = root.getBoundingClientRect()
+    const bounds = getClippingBounds(root)
+    const spaceBelow = bounds.bottom - triggerRect.bottom - MENU_GAP
+    const spaceAbove = triggerRect.top - bounds.top - MENU_GAP
+    const menuHeight = Math.min(listbox.scrollHeight, MENU_MAX_HEIGHT)
+
+    if (menuHeight <= spaceBelow) {
+      return
+    }
+
+    const side = spaceAbove > spaceBelow ? 'top' : 'bottom'
+    const available = side === 'top' ? spaceAbove : spaceBelow
+
+    setPlacement({
+      side,
+      maxHeight: available < menuHeight ? Math.max(available, MENU_MIN_HEIGHT) : undefined,
+    })
+  }, [isOpen])
+
   useEffect(() => {
     if (!isOpen) {
       return undefined
     }
 
-    listboxRef.current?.focus()
+    listboxRef.current?.focus({ preventScroll: true })
 
     const handlePointerDown = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) {
@@ -85,8 +157,20 @@ export default function FilterSelect<TValue extends string>({
       return
     }
 
-    listboxRef.current?.children[activeIndex]?.scrollIntoView({ block: 'nearest' })
-  }, [activeIndex, isOpen])
+    // Scroll only the menu itself; scrollIntoView would also scroll parent containers.
+    const listbox = listboxRef.current
+    const option = listbox?.children[activeIndex] as HTMLElement | undefined
+
+    if (!listbox || !option) {
+      return
+    }
+
+    if (option.offsetTop < listbox.scrollTop) {
+      listbox.scrollTop = option.offsetTop
+    } else if (option.offsetTop + option.offsetHeight > listbox.scrollTop + listbox.clientHeight) {
+      listbox.scrollTop = option.offsetTop + option.offsetHeight - listbox.clientHeight
+    }
+  }, [activeIndex, isOpen, placement])
 
   const handleTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     switch (event.key) {
@@ -139,8 +223,8 @@ export default function FilterSelect<TValue extends string>({
   }
 
   return (
-    <div className="ff-filter-group">
-      <span id={labelId}>{label}</span>
+    <div className={className}>
+      <span id={labelId} className="ff-select-label">{label}</span>
       <div ref={rootRef} className={`ff-select ${isOpen ? 'is-open' : ''}`.trim()}>
         <button
           ref={triggerRef}
@@ -151,6 +235,9 @@ export default function FilterSelect<TValue extends string>({
           aria-expanded={isOpen}
           aria-controls={isOpen ? listboxId : undefined}
           aria-labelledby={`${labelId} ${triggerId}`}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
+          disabled={disabled}
           onClick={() => (isOpen ? closeMenu(true) : openMenu())}
           onKeyDown={handleTriggerKeyDown}
         >
@@ -176,7 +263,8 @@ export default function FilterSelect<TValue extends string>({
           <ul
             ref={listboxRef}
             id={listboxId}
-            className="ff-select__menu"
+            className={`ff-select__menu ${placement.side === 'top' ? 'ff-select__menu--top' : ''}`.trim()}
+            style={placement.maxHeight ? { maxHeight: placement.maxHeight } : undefined}
             role="listbox"
             tabIndex={-1}
             aria-labelledby={labelId}
