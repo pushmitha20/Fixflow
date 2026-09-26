@@ -961,27 +961,16 @@ function RequestDetailsDrawer({
 
               <div className="ff-detail-edit-grid">
                 <div className="ff-form-row">
-                  <label htmlFor="request-edit-priority">Priority</label>
-                  <select
-                    id="request-edit-priority"
+                  <FilterSelect
+                    className="ff-select-field"
+                    label="Priority"
                     value={editForm.priority}
-                    onChange={(event) => {
-                      if (isRequestPriority(event.target.value)) {
-                        updateEditField('priority', event.target.value)
-                      }
-                    }}
-                    aria-invalid={Boolean(editErrors.priority)}
-                    aria-describedby={
-                      editErrors.priority ? 'request-edit-priority-error' : undefined
-                    }
+                    options={editablePriorityOptions}
+                    onChange={(value) => updateEditField('priority', value)}
+                    invalid={Boolean(editErrors.priority)}
+                    describedBy={editErrors.priority ? 'request-edit-priority-error' : undefined}
                     disabled={isSaving}
-                  >
-                    {editablePriorityOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  />
                   {editErrors.priority ? (
                     <p className="ff-field-error" id="request-edit-priority-error">
                       {editErrors.priority}
@@ -990,25 +979,16 @@ function RequestDetailsDrawer({
                 </div>
 
                 <div className="ff-form-row">
-                  <label htmlFor="request-edit-status">Status</label>
-                  <select
-                    id="request-edit-status"
+                  <FilterSelect
+                    className="ff-select-field"
+                    label="Status"
                     value={editForm.status}
-                    onChange={(event) => {
-                      if (isRequestStatus(event.target.value)) {
-                        updateEditField('status', event.target.value)
-                      }
-                    }}
-                    aria-invalid={Boolean(editErrors.status)}
-                    aria-describedby={editErrors.status ? 'request-edit-status-error' : undefined}
+                    options={editableStatusOptions}
+                    onChange={(value) => updateEditField('status', value)}
+                    invalid={Boolean(editErrors.status)}
+                    describedBy={editErrors.status ? 'request-edit-status-error' : undefined}
                     disabled={isSaving}
-                  >
-                    {editableStatusOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  />
                   {editErrors.status ? (
                     <p className="ff-field-error" id="request-edit-status-error">
                       {editErrors.status}
