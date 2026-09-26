@@ -22,9 +22,16 @@ export type RecentRequest = {
   status: RequestStatus
 }
 
-export type PulsePoint = {
+export type StatusDistributionRow = {
   label: string
-  value: number
+  status: RequestStatus
+  count: number
+  percent: number
+}
+
+export type StatusDistribution = {
+  total: number
+  rows: StatusDistributionRow[]
 }
 
 const STATUS_STAGES: Array<{ label: string; status: RequestStatus }> = [
@@ -101,11 +108,22 @@ export const buildNeedsAttention = (requests: MaintenanceRequest[]): RecentReque
     .sort((a, b) => b.id - a.id)
     .map(toRecentRequest)
 
-export const buildPulsePoints = (requests: MaintenanceRequest[]): PulsePoint[] =>
-  STATUS_STAGES.map((stage) => ({
-    label: stage.label,
-    value: countByStatus(requests, stage.status),
-  }))
+export const buildStatusDistribution = (requests: MaintenanceRequest[]): StatusDistribution => {
+  const total = requests.length
+
+  return {
+    total,
+    rows: STATUS_STAGES.map((stage) => {
+      const count = countByStatus(requests, stage.status)
+      return {
+        label: stage.label,
+        status: stage.status,
+        count,
+        percent: total > 0 ? (count / total) * 100 : 0,
+      }
+    }),
+  }
+}
 
 export const loadingMessage = 'Loading operational data...'
 export const emptyMessage = 'No maintenance activity found for this view.'
