@@ -560,7 +560,7 @@ h2 {
   text-align: left;
 }
 
-.ff-select__trigger:hover {
+.ff-select__trigger:hover:not(:disabled) {
   border-color: rgba(23, 107, 99, 0.2);
 }
 
@@ -604,6 +604,26 @@ h2 {
   border-radius: 10px;
   background: var(--ff-surface);
   box-shadow: 0 10px 24px rgba(23, 35, 31, 0.08);
+}
+
+.ff-select__menu--top {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.ff-select__trigger:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.ff-select__trigger[aria-invalid='true'] {
+  border-color: rgba(168, 75, 63, 0.45);
+}
+
+.ff-select-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
 }
 
 .ff-select__menu:focus {
@@ -779,7 +799,8 @@ h2 {
   gap: 8px;
 }
 
-.ff-form-row label {
+.ff-form-row label,
+.ff-form-row .ff-select-label {
   font-size: 0.8rem;
   line-height: 1.25;
   letter-spacing: 0.08em;
