@@ -9,16 +9,16 @@ import {
   buildLifecycleStages,
   buildMetrics,
   buildNeedsAttention,
-  buildPulsePoints,
   buildRecentRequests,
+  buildStatusDistribution,
 } from './dashboardData'
 import {
   Lifecycle,
   MetricStrip,
   NeedsAttention,
-  OperationsPulse,
   RecentRequests,
   RequestQuickView,
+  StatusDistribution,
 } from './components'
 
 type DashboardProps = {
@@ -73,7 +73,7 @@ export default function Dashboard({ onNavigate, onViewRequestsByPriority }: Dash
   const lifecycleStages = useMemo(() => buildLifecycleStages(requests ?? []), [requests])
   const recentRequests = useMemo(() => buildRecentRequests(requests ?? [], 6), [requests])
   const attentionRequests = useMemo(() => buildNeedsAttention(requests ?? []), [requests])
-  const pulsePoints = useMemo(() => buildPulsePoints(requests ?? []), [requests])
+  const statusDistribution = useMemo(() => buildStatusDistribution(requests ?? []), [requests])
 
   const viewedRequest = useMemo(
     () => requests?.find((request) => request.id === viewedRequestId) ?? null,
@@ -123,7 +123,7 @@ export default function Dashboard({ onNavigate, onViewRequestsByPriority }: Dash
               />
             </section>
 
-            <OperationsPulse points={pulsePoints} />
+            <StatusDistribution distribution={statusDistribution} />
           </>
         ) : null}
       </div>
@@ -172,7 +172,9 @@ function DashboardSkeleton() {
 
       <div className="ff-dashboard-skeleton__panel ff-dashboard-skeleton__panel--wide">
         <span className="ff-dashboard-skeleton__line ff-dashboard-skeleton__line--label" />
-        <span className="ff-dashboard-skeleton__line ff-dashboard-skeleton__line--chart" />
+        {Array.from({ length: 4 }, (_, index) => (
+          <span className="ff-dashboard-skeleton__line ff-dashboard-skeleton__line--bar" key={index} />
+        ))}
       </div>
     </div>
   )
